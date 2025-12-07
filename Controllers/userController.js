@@ -9,6 +9,7 @@ const User = require("../Models/userModel");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateToken");
+const { validateToken } = require("./twoFactorController");
 
 const registerUser = async (req, res) => {
   try {
@@ -70,6 +71,7 @@ const registerUser = async (req, res) => {
           email: newUser.email,
           phone: newUser.phone,
           user_name: newUser.user_name,
+          image: newUser.image,
           createdAt: newUser.createdAt,
         },
       });
@@ -102,35 +104,172 @@ const getUserById = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, user_name } = req.body;
+ 
 
-    if (
-      !name ||
-      !email ||
-      !phone ||
-      !user_name ||
-      name.trim() === "" ||
-      email.trim() === "" ||
-      phone.trim() === "" ||
-      user_name.trim() === ""
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
+    // 1. Get data from Frontend
+    const { 
+      name, 
+      email, 
+      phone, 
+      user_name, 
+      currentPassword, 
+      newPassword, 
+      confirmPassword,
+      confirm_password, 
+      image 
+    } = req.body;
+
+    const user = await User.findOne({ id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const updatedUser = await User.findOneAndUpdate(
-      { id },
-      { name, email, phone, user_name },
-      { new: true, runValidators: true }
-    );
+    // 2. Update Basic Info
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+    if (user_name) user.user_name = user_name;
 
-    if (!updatedUser) return res.status(404).json({ error: "User not found" });
+    // 3. Update Image
+    if (req.file) {
+      user.image = `users/${req.file.filename}`;
+    } else if (image) {
+      user.image = image;
+    }
+
+    // 4. Update Password
+    const pass = newPassword || req.body.newPassword;
+    if (pass && pass.trim() !== "") {
+        if (!currentPassword) return res.status(400).json({ message: "Current password required" });
+        
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.status(400).json({ message: "Incorrect current password" });
+
+        const conf = confirmPassword || confirm_password || req.body.confirmPassword;
+        if (pass !== conf) return res.status(400).json({ message: "Passwords do not match" });
+
+        user.password = await bcrypt.hash(pass, 10);
+    }
+
+    // 5. Save
+    await user.save();
 
     res.json({
-      message: "User updated successfully",
-      user: updatedUser,
+      message: "Profile updated successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        user_name: user.user_name,
+        role: user.role,
+        image: user.image, 
+        createdAt: user.createdAt,
+      },
     });
   } catch (error) {
+    console.error("Update User Error:", error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Don't forget to export it along with your other functions!
+module.exports = {
+    // ... other exports
+    updateUser
+};
+
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+  console.log("Login attempt for:", email);
+
+  try {
+    // Case-insensitive search for email or username
+    const user = await User.findOne({
+      $or: [
+        { email: { $regex: new RegExp(`^${email}$`, "i") } },
+        { user_name: { $regex: new RegExp(`^${email}$`, "i") } },
+      ],
+    });
+
+    if (!user) {
+      console.log("User not found for:", email);
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.log("Password mismatch for:", email);
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    console.log("Login successful for:", user.user_name);
+
+    // Check 2FA
+    if (user.twoFactorEnabled) {
+      return res.json({
+        twoFactorRequired: true,
+        user_id: user.id,
+      });
+    }
+
+    const token = generateToken(user);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      user_name: user.user_name,
+      image: user.image,
+      role: user.role,
+      token: token,
+    });
+  } catch (error) {
+    console.error("Login Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const verifyLogin2FA = async (req, res) => {
+  const { user_id, token } = req.body;
+
+  try {
+    const user = await User.findOne({ id: user_id });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const verified = validateToken(user.twoFactorSecret, token);
+
+    if (verified) {
+      const authToken = generateToken(user);
+
+      res.cookie("token", authToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        user_name: user.user_name,
+        image: user.image,
+        role: user.role,
+        token: authToken,
+      });
+    } else {
+      res.status(400).json({ message: "Invalid 2FA Code" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -147,25 +286,9 @@ const deleteUser = async (req, res) => {
   }
 };
 
-const loginUser = async (req, res) => {
-  const { user_name, password } = req.body;
 
-  const user = await User.findOne({ user_name });
-  if (!user) return res.status(404).json({ message: "User not found" });
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
-  const token = generateToken(user);
-
-  res
-    .cookie("token", token, {
-      httpOnly: true,
-      secure: false, // 🔐 Set true in production
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
-    .json({ message: "Login successful", user, token });
-};
 
 const logoutUser = (req, res) => {
   res
@@ -184,5 +307,6 @@ module.exports = {
   updateUser,
   deleteUser,
   loginUser,
+  verifyLogin2FA,
   logoutUser
 };

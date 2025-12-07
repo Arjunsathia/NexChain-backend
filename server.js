@@ -1,29 +1,56 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
-const app = express();
-require("dotenv").config();
+const cookieParser = require("cookie-parser");
+const dotenv = require("dotenv");
+const path = require("path"); // ✅ For handling file paths
+
+// ✅ Load environment variables BEFORE using them anywhere
+dotenv.config();
 
 const connectDB = require("./config/db");
+
+// Route imports
 const userRoutes = require("./Routes/userRoutes");
 const watchListRoutes = require("./Routes/watchlistRoutes");
-const paymentRoutes = require("./Routes/paymentRoutes");
+const purchaseRoutes = require("./Routes/purchaseRoutes");
+const feedbackRoutes = require("./Routes/feedbackRoutes");
+const orderRoutes = require("./Routes/orderRoutes");
+const alertRoutes = require("./Routes/alertRoutes");
+const kycRoutes = require("./Routes/kycRoutes");
+const twoFactorRoutes = require("./Routes/twoFactorRoutes");
+const notificationRoutes = require("./Routes/notificationRoutes");
 
+const app = express();
+
+// ✅ Connect to MongoDB Atlas
 connectDB();
 
+// CORS setup
 const corsOptions = {
-  origin: "http://localhost:5173", 
+  origin: "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true, // optional
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
-const cookieParser = require("cookie-parser");
-app.use(cookieParser()); 
 
+// ✅ EXPOSE UPLOADS FOLDER (Images won't load without this)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Routes
 app.use("/api/users", userRoutes);
 app.use("/api/watchlist", watchListRoutes);
-app.use("/api/payment", paymentRoutes);
+app.use("/api/purchases", purchaseRoutes);
+app.use("/api/feedback", feedbackRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/alerts", alertRoutes);
+app.use("/api/kyc", kycRoutes);
+app.use("/api/2fa", twoFactorRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {

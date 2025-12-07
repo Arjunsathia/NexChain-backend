@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 
 const protect = (req, res, next) => {
+
+
   let token;
 
   // ✅ Check for token in cookie
@@ -9,12 +11,17 @@ const protect = (req, res, next) => {
   }
 
   // ✅ Check for Bearer token in Authorization header
-  else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+  else if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
     token = req.headers.authorization.split(" ")[1];
   }
 
   if (!token) {
-    return res.status(401).json({ message: "Not authorized, no token provided" });
+    return res
+      .status(401)
+      .json({ message: "Not authorized, no token provided" });
   }
 
   try {
@@ -25,7 +32,6 @@ const protect = (req, res, next) => {
     res.status(401).json({ message: "Invalid or expired token" });
   }
 };
-
 
 const adminOnly = (req, res, next) => {
   if (req.user && req.user.role === "admin") {

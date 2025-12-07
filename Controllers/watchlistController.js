@@ -1,4 +1,4 @@
-const WatchList = require("../Models/watchlistModal");
+const WatchList = require("../Models/watchlistModel");
 
 exports.addToWatchList = async (req, res) => {
   try {
@@ -67,6 +67,31 @@ exports.removeFromWatchList = async (req, res) => {
     res
       .status(200)
       .json({ message: "Coin removed from watchlist", data: deleted });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getTrendingCoin = async (req, res) => {
+  try {
+    const trending = await WatchList.aggregate([
+      {
+        $group: {
+          _id: "$id",
+          count: { $sum: 1 },
+          symbol: { $first: "$symbol" },
+          price_change_percentage_24h: { $first: "$price_change_percentage_24h" }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 1 }
+    ]);
+
+    if (trending.length > 0) {
+      res.status(200).json(trending[0]);
+    } else {
+      res.status(200).json(null);
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
