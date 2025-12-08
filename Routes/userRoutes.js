@@ -12,15 +12,14 @@ const {
 } = require("../Controllers/userController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-// Import the Upload Middleware
-const upload = require("../middleware/uploadMiddleware");
+
 
 router.post("/", registerUser);
 router.get("/", protect, adminOnly, getUsers);
 router.get("/:id", getUserById);
 
-// ✅ PUT ROUTE WITH IMAGE UPLOAD
-router.put("/:id", protect, upload.single('image'), updateUser);
+// ✅ PUT ROUTE (NO IMAGE UPLOAD)
+router.put("/:id", protect, updateUser);
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);

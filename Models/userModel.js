@@ -12,10 +12,7 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "admin"],
     default: "user",
   },
-  image: {
-    type: String,
-    default: ""
-  },
+
   kycStatus: {
     type: String,
     enum: ['unverified', 'pending', 'verified', 'rejected'],

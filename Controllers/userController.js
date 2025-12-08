@@ -1,10 +1,3 @@
-const {
-  findAllUsers,
-  findUserById,
-  isEmailTaken,
-  isPhoneTaken,
-  isUsernameTaken,
-} = require("../Services/userService");
 const User = require("../Models/userModel");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
@@ -39,13 +32,13 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    if (await isEmailTaken(email)) {
+    if (await User.findOne({ email })) {
       return res.status(400).json({ message: "Email already in use" });
     }
-    if (await isPhoneTaken(phone)) {
+    if (await User.findOne({ phone })) {
       return res.status(400).json({ message: "Phone number already in use" });
     }
-    if (await isUsernameTaken(user_name)) {
+    if (await User.findOne({ user_name })) {
       return res.status(400).json({ message: "Username already taken" });
     }
 
@@ -71,7 +64,6 @@ const registerUser = async (req, res) => {
           email: newUser.email,
           phone: newUser.phone,
           user_name: newUser.user_name,
-          image: newUser.image,
           createdAt: newUser.createdAt,
         },
       });
@@ -83,7 +75,7 @@ const registerUser = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const users = await findAllUsers();
+    const users = await User.find();
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -93,7 +85,7 @@ const getUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await findUserById(id);
+    const user = await User.findOne({ id });
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
   } catch (error) {
@@ -116,7 +108,6 @@ const updateUser = async (req, res) => {
       newPassword, 
       confirmPassword,
       confirm_password, 
-      image 
     } = req.body;
 
     const user = await User.findOne({ id });
@@ -129,13 +120,6 @@ const updateUser = async (req, res) => {
     if (email) user.email = email;
     if (phone) user.phone = phone;
     if (user_name) user.user_name = user_name;
-
-    // 3. Update Image
-    if (req.file) {
-      user.image = `users/${req.file.filename}`;
-    } else if (image) {
-      user.image = image;
-    }
 
     // 4. Update Password
     const pass = newPassword || req.body.newPassword;
@@ -163,7 +147,6 @@ const updateUser = async (req, res) => {
         phone: user.phone,
         user_name: user.user_name,
         role: user.role,
-        image: user.image, 
         createdAt: user.createdAt,
       },
     });
@@ -227,7 +210,6 @@ const loginUser = async (req, res) => {
       name: user.name,
       email: user.email,
       user_name: user.user_name,
-      image: user.image,
       role: user.role,
       token: token,
     });
@@ -261,7 +243,6 @@ const verifyLogin2FA = async (req, res) => {
         name: user.name,
         email: user.email,
         user_name: user.user_name,
-        image: user.image,
         role: user.role,
         token: authToken,
       });
