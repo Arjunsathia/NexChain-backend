@@ -164,7 +164,7 @@ module.exports = {
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-  console.log("Login attempt for:", email);
+
 
   try {
     // Case-insensitive search for email or username
@@ -176,17 +176,17 @@ const loginUser = async (req, res) => {
     });
 
     if (!user) {
-      console.log("User not found for:", email);
+
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log("Password mismatch for:", email);
+
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    console.log("Login successful for:", user.user_name);
+
 
     // Check 2FA
     if (user.twoFactorEnabled) {
