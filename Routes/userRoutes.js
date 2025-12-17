@@ -21,6 +21,9 @@ router.get("/:id", getUserById);
 // ✅ PUT ROUTE (NO IMAGE UPLOAD)
 router.put("/:id", protect, updateUser);
 
+// ✅ DELETE ROUTE
+router.delete("/:id", protect, adminOnly, deleteUser);
+
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/verify-login-2fa", verifyLogin2FA);
