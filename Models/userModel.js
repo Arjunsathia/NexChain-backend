@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
   // Add virtual wallet field
   virtualBalance: {
     type: Number,
-    default: 100000, // $100,000 virtual money
+    default: 10000, // $10,000 virtual money
     min: 0
   }
 }, { timestamps: true });

@@ -281,7 +281,7 @@ exports.getUserBalance = async (req, res) => {
   }
 };
 
-// POST /api/purchases/reset-balance - Reset user's virtual balance to 100,000
+// POST /api/purchases/reset-balance - Reset user's virtual balance to 10,000
 exports.resetBalance = async (req, res) => {
   try {
     const { user_id } = req.body;
@@ -294,7 +294,7 @@ exports.resetBalance = async (req, res) => {
       });
     }
 
-    user.virtualBalance = 100000;
+    user.virtualBalance = 10000;
     await user.save();
 
     res.json({ 
