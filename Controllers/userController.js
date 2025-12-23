@@ -295,7 +295,11 @@ const updateProfileImage = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    user.image = req.file.path;
+    // If Cloudinary (URL), use path. If local (Disk), use filename.
+    user.image = req.file.path && req.file.path.startsWith('http') 
+      ? req.file.path 
+      : req.file.filename;
+
     await user.save();
 
     res.json({
