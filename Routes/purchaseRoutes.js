@@ -8,9 +8,17 @@ const {
   getUserBalance, 
   resetBalance,
   getUserHoldings,
-  getUserTransactionHistory
+  getUserTransactionHistory,
+  getPlatformStats,
+  getTodayTransactions
 } = require("../Controllers/purchaseController");
 const { protect } = require("../middleware/authMiddleware");
+
+// GET /api/purchases/platform-stats - Get platform stats (Admin)
+router.get("/platform-stats", protect, getPlatformStats);
+
+// GET /api/purchases/today-transactions - Get detailed today's transactions
+router.get("/today-transactions", protect, getTodayTransactions);
 
 // GET /api/purchases/:user_id - Get user purchases
 router.get("/:user_id", protect, getUserPurchases);

@@ -64,6 +64,8 @@ const registerUser = async (req, res) => {
           email: newUser.email,
           phone: newUser.phone,
           user_name: newUser.user_name,
+          role: newUser.role,
+          image: newUser.image,
           createdAt: newUser.createdAt,
         },
       });
@@ -147,6 +149,7 @@ const updateUser = async (req, res) => {
         phone: user.phone,
         user_name: user.user_name,
         role: user.role,
+        image: user.image,
         createdAt: user.createdAt,
       },
     });
@@ -196,6 +199,9 @@ const loginUser = async (req, res) => {
       });
     }
 
+    user.lastLogin = new Date();
+    await user.save();
+
     const token = generateToken(user);
 
     res.cookie("token", token, {
@@ -211,6 +217,7 @@ const loginUser = async (req, res) => {
       email: user.email,
       user_name: user.user_name,
       role: user.role,
+      image: user.image,
       token: token,
     });
   } catch (error) {
@@ -229,6 +236,9 @@ const verifyLogin2FA = async (req, res) => {
     const verified = validateToken(user.twoFactorSecret, token);
 
     if (verified) {
+      user.lastLogin = new Date();
+      await user.save();
+
       const authToken = generateToken(user);
 
       res.cookie("token", authToken, {
@@ -244,6 +254,7 @@ const verifyLogin2FA = async (req, res) => {
         email: user.email,
         user_name: user.user_name,
         role: user.role,
+        image: user.image,
         token: authToken,
       });
     } else {
@@ -271,6 +282,41 @@ const deleteUser = async (req, res) => {
 
 
 
+const updateProfileImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No image uploaded" });
+    }
+
+    const user = await User.findOne({ id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.image = req.file.filename;
+    await user.save();
+
+    res.json({
+      message: "Profile image updated successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        user_name: user.user_name,
+        role: user.role,
+        image: user.image,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Update Image Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const logoutUser = (req, res) => {
   res
     .clearCookie("token", {
@@ -286,6 +332,7 @@ module.exports = {
   getUsers,
   getUserById,
   updateUser,
+  updateProfileImage, // Export the new function
   deleteUser,
   loginUser,
   verifyLogin2FA,

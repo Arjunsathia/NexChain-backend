@@ -4,19 +4,22 @@ const {
   registerUser,
   getUsers,
   getUserById,
-  updateUser, // Make sure this is imported from controller
+  updateUser, 
+  updateProfileImage,
   deleteUser,
   loginUser,
   verifyLogin2FA,
   logoutUser,
 } = require("../Controllers/userController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
-
-
+const upload = require("../middleware/uploadMiddleware");
 
 router.post("/", registerUser);
 router.get("/", protect, adminOnly, getUsers);
 router.get("/:id", getUserById);
+
+// Update Profile Image
+router.put("/profile-image/:id", protect, upload.single("image"), updateProfileImage);
 
 // ✅ PUT ROUTE (NO IMAGE UPLOAD)
 router.put("/:id", protect, updateUser);

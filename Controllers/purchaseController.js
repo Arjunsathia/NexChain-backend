@@ -369,3 +369,108 @@ exports.getUserTransactionHistory = async (req, res) => {
     });
   }
 };
+
+// NEW: Get platform-wide statistics (for Admin Dashboard)
+exports.getPlatformStats = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1. Total Trades Today
+    const tradesToday = await Transaction.countDocuments({
+      transactionDate: { $gte: today }
+    });
+
+    // 2. Active Traders Today (Unique users who traded today)
+    const activeTraders = await Transaction.distinct('user_id', {
+      transactionDate: { $gte: today }
+    });
+
+    // 3. Platform Total Volume Today
+    const volumeResult = await Transaction.aggregate([
+      { $match: { transactionDate: { $gte: today } } },
+      { $group: { _id: null, totalVolume: { $sum: "$totalValue" } } }
+    ]);
+    const volumeToday = volumeResult.length > 0 ? volumeResult[0].totalVolume : 0;
+
+    // 4. Total Users Count (Overall)
+    const totalUsers = await User.countDocuments({});
+
+    res.json({
+      success: true,
+      stats: {
+        tradesToday,
+        activeTradersToday: activeTraders.length,
+        volumeToday,
+        totalUsers
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching platform stats:", error);
+    res.status(500).json({
+      success: false,
+      error: "Unable to fetch platform stats"
+    });
+  }
+};
+
+// NEW: Get detailed list of today's transactions
+exports.getTodayTransactions = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const transactions = await Transaction.aggregate([
+      { 
+        $match: { 
+          transactionDate: { $gte: today } 
+        } 
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user_id",
+          foreignField: "id",
+          as: "userDetails"
+        }
+      },
+      { 
+        $unwind: { 
+          path: "$userDetails", 
+          preserveNullAndEmptyArrays: true 
+        } 
+      },
+      { 
+        $sort: { transactionDate: -1 } 
+      },
+      {
+        $project: {
+          _id: 1,
+          transactionDate: 1,
+          type: 1,
+          coinName: 1,
+          coinSymbol: 1,
+          quantity: 1,
+          price: 1,
+          totalValue: 1,
+          image: 1,
+          user_id: 1,
+          userName: { $ifNull: ["$userDetails.name", "Unknown User"] },
+          userEmail: { $ifNull: ["$userDetails.email", "No Email"] },
+          userRole: { $ifNull: ["$userDetails.role", "user"] }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: transactions
+    });
+  } catch (error) {
+    console.error("Error fetching today's transactions:", error);
+    res.status(500).json({
+      success: false,
+      error: "Unable to fetch transactions"
+    });
+  }
+};

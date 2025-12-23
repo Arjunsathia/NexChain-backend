@@ -37,11 +37,18 @@ const userSchema = new mongoose.Schema({
   tempSecret: {
     type: String,
   },
+  image: {
+    type: String, // Stores filename of the uploaded profile image
+  },
   // Add virtual wallet field
   virtualBalance: {
     type: Number,
     default: 10000, // $10,000 virtual money
     min: 0
+  },
+  lastLogin: {
+    type: Date,
+    default: Date.now
   }
 }, { timestamps: true });
 
