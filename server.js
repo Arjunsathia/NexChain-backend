@@ -52,6 +52,15 @@ app.use("/api/kyc", kycRoutes);
 app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/notifications", notificationRoutes);
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("🔥 Error:", err.message);
+  res.status(500).json({ 
+    success: false, 
+    message: err.message || "Internal Server Error" 
+  });
+});
+
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
