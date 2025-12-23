@@ -13,8 +13,8 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
-
     "body-parser": "^2.2.0",
+    "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
@@ -24,6 +24,7 @@
     "mongoose": "^8.16.4",
     "mongoose-paginate-v2": "^1.9.1",
     "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
     "qrcode": "^1.5.4",
     "speakeasy": "^2.0.0",
     "stripe": "^18.3.0",

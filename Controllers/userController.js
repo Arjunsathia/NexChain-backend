@@ -295,7 +295,7 @@ const updateProfileImage = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    user.image = req.file.filename;
+    user.image = req.file.path;
     await user.save();
 
     res.json({
