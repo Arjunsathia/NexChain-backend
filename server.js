@@ -8,6 +8,11 @@ const path = require("path"); // ✅ For handling file paths
 // ✅ Load environment variables BEFORE using them anywhere
 dotenv.config();
 
+const fs = require("fs");
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
+
 const connectDB = require("./config/db");
 
 // Route imports
