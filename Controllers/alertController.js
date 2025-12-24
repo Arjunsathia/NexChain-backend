@@ -1,5 +1,5 @@
 const Alert = require("../Models/Alert");
-const User = require("../Models/userModel");
+
 
 // Create a new price alert
 exports.createAlert = async (req, res) => {
@@ -38,7 +38,7 @@ exports.getAlerts = async (req, res) => {
     const { user_id } = req.params;
     const alerts = await Alert.find({ user_id, status: 'active' }).sort({ createdAt: -1 });
     res.json({ success: true, alerts });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch alerts" });
   }
 };
@@ -49,7 +49,7 @@ exports.deleteAlert = async (req, res) => {
     const { alertId } = req.params;
     await Alert.findByIdAndDelete(alertId);
     res.json({ success: true, message: "Alert deleted" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to delete alert" });
   }
 };

@@ -67,7 +67,7 @@ exports.verify2FA = async (req, res) => {
 
 // Disable 2FA
 exports.disable2FA = async (req, res) => {
-    const { user_id, password } = req.body; // Require password to disable
+    const { user_id } = req.body; // Require password to disable
     // Note: Password verification should ideally be done here or in a middleware.
     // For simplicity, we'll assume the user is authenticated via the protect middleware.
 
@@ -80,7 +80,7 @@ exports.disable2FA = async (req, res) => {
         await user.save();
 
         res.json({ success: true, message: "2FA Disabled" });
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: "Failed to disable 2FA" });
     }
 };

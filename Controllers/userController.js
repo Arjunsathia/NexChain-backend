@@ -159,11 +159,7 @@ const updateUser = async (req, res) => {
   }
 };
 
-// Don't forget to export it along with your other functions!
-module.exports = {
-    // ... other exports
-    updateUser
-};
+
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -277,7 +273,6 @@ const deleteUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 
 

@@ -1,8 +1,7 @@
 const Order = require("../Models/Order");
 const User = require("../Models/userModel");
 const PurchasedCoin = require("../Models/PurchasedCoin");
-const Transaction = require("../Models/Transaction");
-const { v4: uuidv4 } = require("uuid");
+const { executeBuy, executeSell } = require("../utils/transactionHelpers");
 
 // Create a new limit order
 exports.createOrder = async (req, res) => {
@@ -24,11 +23,6 @@ exports.createOrder = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // Determine price for value calculation
-    // For Limit/Stop-Limit: use limit_price
-    // For Market/Stop-Market: use current market price (approx) or stop_price?
-    // For simplicity in this MVP, we require limit_price for all except pure market (which isn't handled here yet).
-    // If Stop-Market, we might estimate value based on stop_price.
-    
     let priceForCalc = limit_price;
     if (category === 'stop_market') priceForCalc = stop_price;
     
@@ -90,7 +84,7 @@ exports.getOpenOrders = async (req, res) => {
     const { user_id } = req.params;
     const orders = await Order.find({ user_id, status: 'pending' }).sort({ createdAt: -1 });
     res.json({ success: true, orders });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 };
@@ -120,7 +114,7 @@ exports.cancelOrder = async (req, res) => {
 
     res.json({ success: true, message: "Order cancelled" });
 
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to cancel order" });
   }
 };
@@ -136,7 +130,7 @@ exports.executeOrder = async (req, res) => {
 
     // Verify Price Condition
     let executed = false;
-    let triggered = false;
+    
 
     // STOP ORDER LOGIC
     if (order.category === 'stop_limit' || order.category === 'stop_market') {
@@ -174,101 +168,29 @@ exports.executeOrder = async (req, res) => {
       return res.status(400).json({ error: "Price condition not met" });
     }
 
-    const user = await User.findOne({ id: order.user_id });
-
     if (order.type === 'buy') {
-      // Logic similar to buyCoin but balance was already deducted.
-      // We just need to add the coins.
-      
-      let purchasedCoin = await PurchasedCoin.findOne({ user_id: order.user_id, coin_id: order.coin_id });
-
-      if (purchasedCoin) {
-        purchasedCoin.quantity += order.quantity;
-        purchasedCoin.totalCost += order.total_value;
-        purchasedCoin.coinPriceUSD = purchasedCoin.totalCost / purchasedCoin.quantity; // Update avg
-        purchasedCoin.purchaseDate = new Date();
-        await purchasedCoin.save();
-      } else {
-        await PurchasedCoin.create({
-          user_id: order.user_id,
-          coin_id: order.coin_id,
-          coinName: order.coin_name,
-          coinSymbol: order.coin_symbol,
-          coinPriceUSD: order.limit_price, // Use limit price as cost basis
-          quantity: order.quantity,
-          totalCost: order.total_value,
-          fees: 0,
-          image: order.coin_image,
-          purchaseDate: new Date()
-        });
-      }
-
-      // Transaction Record
-      await Transaction.create({
-        user_id: order.user_id,
-        coin_id: order.coin_id,
-        coinName: order.coin_name,
-        coinSymbol: order.coin_symbol,
-        type: 'buy',
-        quantity: order.quantity,
-        price: order.limit_price,
-        totalValue: order.total_value,
-        fees: 0,
-        image: order.coin_image,
-        transactionDate: new Date()
-      });
+      await executeBuy(
+          order.user_id,
+          { 
+            coinId: order.coin_id, 
+            coinName: order.coin_name, 
+            coinSymbol: order.coin_symbol, 
+            image: order.coin_image 
+          },
+          order.quantity,
+          order.limit_price,
+          order.total_value,
+          0,
+          false // Do not deduct balance (already locked)
+      );
 
     } else if (order.type === 'sell') {
-      // Logic similar to sellCoin.
-      // 1. Deduct holdings (FIFO).
-      // 2. Add balance.
-      
-      const saleAmount = order.quantity * order.limit_price; // Executed at limit price (or better, but using limit for simplicity)
-      user.virtualBalance += saleAmount;
-      await user.save();
-
-      const purchases = await PurchasedCoin.find({ user_id: order.user_id, coin_id: order.coin_id }).sort({ purchaseDate: 1 });
-      
-      let remainingToSell = order.quantity;
-      const purchasesToDelete = [];
-      
-      for (let purchase of purchases) {
-        if (remainingToSell <= 0) break;
-
-        const sellQuantity = Math.min(purchase.quantity, remainingToSell);
-        
-        // Update purchase
-        const averageCost = purchase.totalCost / purchase.quantity;
-        purchase.quantity -= sellQuantity;
-        purchase.totalCost -= (sellQuantity * averageCost);
-
-        if (purchase.quantity <= 0.00000001) { // Float safety
-             purchasesToDelete.push(purchase._id);
-        } else {
-             await purchase.save();
-        }
-        
-        remainingToSell -= sellQuantity;
-      }
-
-      if (purchasesToDelete.length > 0) {
-        await PurchasedCoin.deleteMany({ _id: { $in: purchasesToDelete } });
-      }
-
-      // Transaction Record
-      await Transaction.create({
-        user_id: order.user_id,
-        coin_id: order.coin_id,
-        coinName: order.coin_name,
-        coinSymbol: order.coin_symbol,
-        type: 'sell',
-        quantity: order.quantity,
-        price: order.limit_price,
-        totalValue: saleAmount,
-        fees: 0,
-        image: order.coin_image,
-        transactionDate: new Date()
-      });
+       await executeSell(
+           order.user_id, 
+           order.coin_id, 
+           order.quantity, 
+           order.limit_price
+       );
     }
 
     order.status = 'filled';
