@@ -296,12 +296,7 @@ const updateProfileImage = async (req, res) => {
     } else {
       // Construct absolute URL for local file
       const host = req.get('host');
-      let protocol = req.protocol;
-      if (req.headers['x-forwarded-proto']) {
-        protocol = req.headers['x-forwarded-proto'];
-      } else if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
-         protocol = 'https';
-      }
+      let protocol = req.headers['x-forwarded-proto'] || 'http';
       user.image = `${protocol}://${host}/uploads/${req.file.filename}`;
     }
 
