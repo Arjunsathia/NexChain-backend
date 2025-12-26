@@ -290,10 +290,20 @@ const updateProfileImage = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // If Cloudinary (URL), use path. If local (Disk), use filename.
-    user.image = req.file.path && req.file.path.startsWith('http') 
-      ? req.file.path 
-      : req.file.filename;
+    // If Cloudinary (URL), use path. If local (Disk), construct full URL.
+    if (req.file.path && req.file.path.startsWith('http')) {
+      user.image = req.file.path;
+    } else {
+      // Construct absolute URL for local file
+      const host = req.get('host');
+      let protocol = req.protocol;
+      if (req.headers['x-forwarded-proto']) {
+        protocol = req.headers['x-forwarded-proto'];
+      } else if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+         protocol = 'https';
+      }
+      user.image = `${protocol}://${host}/uploads/${req.file.filename}`;
+    }
 
     await user.save();
 
