@@ -325,7 +325,7 @@ const logoutUser = (req, res) => {
   res
     .clearCookie("token", {
       httpOnly: true,
-      secure: false, // 🔐 Set true in production
+      secure: process.env.NODE_ENV === "production", // 🔐 Set true in production
       sameSite: "strict",
     })
     .json({ message: "Logout successful" });

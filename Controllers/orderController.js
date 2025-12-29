@@ -84,7 +84,8 @@ exports.getOpenOrders = async (req, res) => {
     const { user_id } = req.params;
     const orders = await Order.find({ user_id, status: 'pending' }).sort({ createdAt: -1 });
     res.json({ success: true, orders });
-  } catch {
+  } catch (error) {
+    console.error("Fetch Open Orders Error:", error);
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 };
@@ -114,7 +115,8 @@ exports.cancelOrder = async (req, res) => {
 
     res.json({ success: true, message: "Order cancelled" });
 
-  } catch {
+  } catch (error) {
+    console.error("Cancel Order Error:", error);
     res.status(500).json({ error: "Failed to cancel order" });
   }
 };
@@ -178,7 +180,7 @@ exports.executeOrder = async (req, res) => {
             image: order.coin_image 
           },
           order.quantity,
-          order.limit_price,
+          order.category === 'stop_market' ? current_price : order.limit_price,
           order.total_value,
           0,
           false // Do not deduct balance (already locked)
@@ -189,7 +191,7 @@ exports.executeOrder = async (req, res) => {
            order.user_id, 
            order.coin_id, 
            order.quantity, 
-           order.limit_price
+           order.category === 'stop_market' ? current_price : order.limit_price
        );
     }
 

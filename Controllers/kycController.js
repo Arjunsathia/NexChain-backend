@@ -25,8 +25,8 @@ exports.submitKYC = async (req, res) => {
 
     res.json({ success: true, message: "KYC submitted successfully", user });
 
-  } catch {
-    console.error("KYC Submit Error");
+  } catch (error) {
+    console.error("KYC Submit Error:", error);
     res.status(500).json({ error: "Failed to submit KYC" });
   }
 };
@@ -39,7 +39,8 @@ exports.getKYCStatus = async (req, res) => {
         if (!user) return res.status(404).json({ error: "User not found" });
 
         res.json({ success: true, kycStatus: user.kycStatus, kycData: user.kycData });
-    } catch {
+    } catch (error) {
+        console.error("KYC Status Fetch Error:", error);
         res.status(500).json({ error: "Failed to fetch KYC status" });
     }
 };
@@ -59,7 +60,8 @@ exports.verifyKYC = async (req, res) => {
         await user.save();
 
         res.json({ success: true, message: `KYC ${status}`, user });
-    } catch {
+    } catch (error) {
+        console.error("KYC Verify Error:", error);
         res.status(500).json({ error: "Failed to update KYC status" });
     }
 };
