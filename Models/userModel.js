@@ -12,6 +12,14 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "admin"],
     default: "user",
   },
+  provider: {
+    type: String,
+    default: "local",
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false,
+  },
 
   kycStatus: {
     type: String,
@@ -27,16 +35,7 @@ const userSchema = new mongoose.Schema({
     documentImage: String,
     rejectionReason: String
   },
-  twoFactorEnabled: {
-    type: Boolean,
-    default: false
-  },
-  twoFactorSecret: {
-    type: String,
-  },
-  tempSecret: {
-    type: String,
-  },
+
   image: {
     type: String, // Stores filename of the uploaded profile image
   },

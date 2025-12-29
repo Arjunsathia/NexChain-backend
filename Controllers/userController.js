@@ -1,79 +1,6 @@
 const User = require("../Models/userModel");
-const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
-const generateToken = require("../utils/generateToken");
-const { validateToken } = require("./twoFactorController");
 
-const registerUser = async (req, res) => {
-  try {
-    const { name, email, phone, user_name, password, confirm_password, role } =
-      req.body;
-
-    // Check for missing or empty fields
-    if (
-      !name ||
-      !email ||
-      !phone ||
-      !user_name ||
-      !password ||
-      !confirm_password ||
-      name.trim() === "" ||
-      email.trim() === "" ||
-      phone.trim() === "" ||
-      user_name.trim() === "" ||
-      password.trim() === "" ||
-      confirm_password.trim() === ""
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    // Check if passwords match
-    if (password !== confirm_password) {
-      return res.status(400).json({ message: "Passwords do not match" });
-    }
-
-    if (await User.findOne({ email })) {
-      return res.status(400).json({ message: "Email already in use" });
-    }
-    if (await User.findOne({ phone })) {
-      return res.status(400).json({ message: "Phone number already in use" });
-    }
-    if (await User.findOne({ user_name })) {
-      return res.status(400).json({ message: "Username already taken" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({
-      id: uuidv4(),
-      name,
-      email,
-      phone,
-      user_name,
-      password: hashedPassword,
-      role: role || "user",
-    });
-
-    res
-      .status(201)
-      .json({
-        message: "User registered successfully",
-        user: {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          phone: newUser.phone,
-          user_name: newUser.user_name,
-          role: newUser.role,
-          image: newUser.image,
-          createdAt: newUser.createdAt,
-        },
-      });
-  } catch (error) {
-    console.error("Register Error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
 
 const getUsers = async (req, res) => {
   try {
@@ -161,105 +88,7 @@ const updateUser = async (req, res) => {
 
 
 
-const loginUser = async (req, res) => {
-  const { email, password } = req.body;
 
-
-  try {
-    // Case-insensitive search for email or username
-    const user = await User.findOne({
-      $or: [
-        { email: { $regex: new RegExp(`^${email}$`, "i") } },
-        { user_name: { $regex: new RegExp(`^${email}$`, "i") } },
-      ],
-    });
-
-    if (!user) {
-
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-
-
-    // Check 2FA
-    if (user.twoFactorEnabled) {
-      return res.json({
-        twoFactorRequired: true,
-        user_id: user.id,
-      });
-    }
-
-    user.lastLogin = new Date();
-    await user.save();
-
-    const token = generateToken(user);
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
-
-    res.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      user_name: user.user_name,
-      role: user.role,
-      image: user.image,
-      token: token,
-    });
-  } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-const verifyLogin2FA = async (req, res) => {
-  const { user_id, token } = req.body;
-
-  try {
-    const user = await User.findOne({ id: user_id });
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const verified = validateToken(user.twoFactorSecret, token);
-
-    if (verified) {
-      user.lastLogin = new Date();
-      await user.save();
-
-      const authToken = generateToken(user);
-
-      res.cookie("token", authToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
-
-      res.json({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        user_name: user.user_name,
-        role: user.role,
-        image: user.image,
-        token: authToken,
-      });
-    } else {
-      res.status(400).json({ message: "Invalid 2FA Code" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 const deleteUser = async (req, res) => {
   try {
@@ -332,13 +161,10 @@ const logoutUser = (req, res) => {
 };
 
 module.exports = {
-  registerUser,
   getUsers,
   getUserById,
   updateUser,
   updateProfileImage, // Export the new function
   deleteUser,
-  loginUser,
-  verifyLogin2FA,
   logoutUser
 };

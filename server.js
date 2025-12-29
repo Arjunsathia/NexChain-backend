@@ -23,8 +23,8 @@ const feedbackRoutes = require("./Routes/feedbackRoutes");
 const orderRoutes = require("./Routes/orderRoutes");
 const alertRoutes = require("./Routes/alertRoutes");
 const kycRoutes = require("./Routes/kycRoutes");
-const twoFactorRoutes = require("./Routes/twoFactorRoutes");
 const notificationRoutes = require("./Routes/notificationRoutes");
+const authRoutes = require("./Routes/authRoutes");
 
 const app = express();
 
@@ -54,8 +54,8 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/kyc", kycRoutes);
-app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/auth", authRoutes);
 
 // Global Error Handler
 // eslint-disable-next-line no-unused-vars

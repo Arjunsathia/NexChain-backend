@@ -26,6 +26,12 @@ const protect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    if (!decoded || typeof decoded === "string") {
+      res.status(401).json({ message: "Invalid token payload" });
+      return;
+    }
+
     req.user = decoded;
     next();
   } catch {
