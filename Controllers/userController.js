@@ -1,6 +1,8 @@
 const User = require("../Models/userModel");
 const AuditLog = require("../Models/AuditLog");
 const bcrypt = require("bcrypt");
+const { sendEmail } = require("../utils/emailService");
+const Notification = require("../Models/Notification");
 
 
 const getUsers = async (req, res) => {
@@ -275,6 +277,94 @@ const updateProfileImage = async (req, res) => {
   }
 };
 
+const contactUser = async (req, res) => {
+  try {
+    const { userId, type, subject, message } = req.body;
+
+    // Validation
+    if (!userId || !type || !message) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const user = await User.findOne({ id: userId });
+    let targetUser = user;
+    
+    // Fallback if userId is MongoDB _id
+    if (!targetUser && userId.match(/^[0-9a-fA-F]{24}$/)) {
+        targetUser = await User.findById(userId);
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 1. Send Email
+    if (type === "email") {
+      if (!subject) return res.status(400).json({ error: "Subject required for emails" });
+      
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <h2 style="color: #4A90E2;">Message from Admin</h2>
+          <p>Hello ${targetUser.name},</p>
+          <p>${message.replace(/\n/g, "<br>")}</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #888;">&copy; 2025 NexChain Support</p>
+        </div>
+      `;
+
+      const sent = await sendEmail(targetUser.email, subject, emailHtml);
+      if (!sent) return res.status(500).json({ error: "Failed to send email" });
+
+      // **User Requirement:** When email is sent successfully, also show a notification to check mail box.
+      await Notification.create({
+        user: targetUser._id,
+        title: "New Email from Support",
+        message: "We have sent you an important email. Please check your inbox.",
+        type: "info"
+      });
+    }
+
+    // 2. Send Internal Message (Notification)
+    else if (type === "internal") {
+      // **User Requirement:** Internal message shows in notification.
+      await Notification.create({
+        user: targetUser._id,
+        title: "Message from Admin",
+        message: message,
+        type: "info"
+      });
+    }
+
+    // 3. Audit Log
+    try {
+        if (req.user) {
+           const adminUser = await User.findOne({ id: req.user.id });
+           if (adminUser) {
+               await AuditLog.create({
+                  adminId: adminUser._id,
+                  action: "USER_CONTACT",
+                  targetId: targetUser._id,
+                  details: {
+                      type: type,
+                      subject: subject || "Internal Message",
+                      messageLength: message.length
+                  },
+                  ipAddress: req.ip || req.headers['x-forwarded-for'] || '0.0.0.0'
+               });
+           }
+        }
+    } catch (logErr) {
+        console.error("Audit Log Error", logErr);
+    }
+
+    res.json({ message: "Message sent successfully" });
+
+  } catch (error) {
+    console.error("Contact User Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const logoutUser = (req, res) => {
   res
     .clearCookie("token", {
@@ -291,5 +381,6 @@ module.exports = {
   updateUser,
   updateProfileImage, // Export the new function
   deleteUser,
-  logoutUser
+  logoutUser,
+  contactUser
 };

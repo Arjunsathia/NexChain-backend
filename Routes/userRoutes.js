@@ -7,6 +7,7 @@ const {
   updateProfileImage,
   deleteUser,
   logoutUser,
+  contactUser
 } = require("../Controllers/userController");
 const { protect, adminOnly, requireAdmin2FA } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
@@ -22,6 +23,10 @@ router.put("/:id", protect, updateUser);
 
 // ✅ DELETE ROUTE
 router.delete("/:id", protect, adminOnly, requireAdmin2FA, deleteUser);
+
+
+// ✅ CONTACT USER ROUTE
+router.post("/contact-user", protect, adminOnly, contactUser);
 
 router.post("/logout", logoutUser);
 

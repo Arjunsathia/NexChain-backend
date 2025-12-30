@@ -3,23 +3,44 @@ const nodemailer = require("nodemailer");
 /**
  * Sends an OTP email to the user.
  */
-const sendOTPEmail = async (email, otp) => {
-  // Use environment variables for configuration
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+// Create reusable transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
+/**
+ * Generic send email function
+ */
+const sendEmail = async (to, subject, html) => {
   const mailOptions = {
     from: `"NexChain Support" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Your NexChain Verification OTP",
-    html: `
+    to,
+    subject,
+    html,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent: %s", info.messageId);
+    return true;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return false;
+  }
+};
+
+/**
+ * Sends an OTP email to the user.
+ */
+const sendOTPEmail = async (email, otp) => {
+  const subject = "Your NexChain Verification OTP";
+  const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
         <h2 style="color: #4A90E2; text-align: center;">NexChain Verification</h2>
         <p>Hello,</p>
@@ -34,19 +55,12 @@ const sendOTPEmail = async (email, otp) => {
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <p style="font-size: 12px; color: #888; text-align: center;">&copy; 2025 NexChain. All rights reserved.</p>
       </div>
-    `,
-  };
+    `;
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent: %s", info.messageId);
-    return true;
-  } catch (error) {
-    console.error("Error sending email:", error);
-    return false;
-  }
+  return await sendEmail(email, subject, html);
 };
 
 module.exports = {
+  sendEmail,
   sendOTPEmail,
 };
