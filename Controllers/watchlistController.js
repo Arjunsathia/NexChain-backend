@@ -2,7 +2,16 @@ const WatchList = require("../Models/watchlistModel");
 
 exports.addToWatchList = async (req, res) => {
   try {
-    const { user_id, id } = req.body;
+    let { user_id } = req.body;
+    const { id } = req.body;
+
+    if (!user_id && req.user) {
+      user_id = req.user.id;
+    }
+
+    if (!user_id || !id) {
+       return res.status(400).json({ message: "User ID and Coin ID are required" });
+    }
 
     // Check if this user has already saved this coin
     const exists = await WatchList.findOne({ user_id, id });
@@ -14,7 +23,7 @@ exports.addToWatchList = async (req, res) => {
     }
 
     // Create and save the new watchlist item
-    const saved = await WatchList.create(req.body);
+    const saved = await WatchList.create({ ...req.body, user_id });
     res.status(201).json(saved);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -23,16 +32,18 @@ exports.addToWatchList = async (req, res) => {
 
 exports.getWatchList = async (req, res) => {
   try {
-    const { id, user_id } = req.query; // ?id=bitcoin&user_id=UUID
+    const { id } = req.query; 
+    let { user_id } = req.query;
 
-    const filter = {};
-
-    // ✅ Use user_id field in filter as per your schema
-    if (user_id) {
-      filter.user_id = user_id;
-    } else if (req.user && req.user.uuid) {
-      filter.user_id = req.user.uuid;
+    if (!user_id && req.user) {
+        user_id = req.user.id;
     }
+
+    if (!user_id) {
+        return res.status(400).json({ message: "User ID required" });
+    }
+
+    const filter = { user_id };
 
     if (id) {
       filter.id = id;
@@ -48,7 +59,11 @@ exports.getWatchList = async (req, res) => {
 
 exports.removeFromWatchList = async (req, res) => {
   try {
-    const { user_id, id } = req.query;
+    let { user_id, id } = req.query;
+
+    if (!user_id && req.user) {
+        user_id = req.user.id;
+    }
 
     if (!user_id || !id) {
       return res
@@ -59,6 +74,8 @@ exports.removeFromWatchList = async (req, res) => {
     const deleted = await WatchList.findOneAndDelete({ user_id, id });
 
     if (!deleted) {
+      // Idempotency: success even if not found, distinct message or just success?
+      // Frontend expects success or handles error. Returning 404 effectively tells FE it wasn't there.
       return res
         .status(404)
         .json({ message: "Coin not found in watchlist for this user" });
