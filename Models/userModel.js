@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ["user", "admin"],
+    enum: ["user", "admin", "superadmin"],
     default: "user",
   },
   provider: {
@@ -48,6 +48,18 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
     default: Date.now
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  isFrozen: {
+    type: Boolean,
+    default: false
+  },
+  adminTotpSecret: {
+    type: Object, // Stores ASCII, Hex, Base32, OTPAuth URL
+    select: false // Do not return by default
   }
 }, { timestamps: true });
 

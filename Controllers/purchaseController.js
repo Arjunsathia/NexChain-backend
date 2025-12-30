@@ -39,6 +39,13 @@ exports.buyCoin = async (req, res) => {
   } = req.body;
 
   try {
+    const user = await User.findOne({ id: user_id });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.isFrozen) {
+        return res.status(403).json({ error: "Account is frozen. Trading disabled." });
+    }
+
     const result = await executeBuy(
         user_id,
         { coinId: coin_id, coinName: coin_name, coinSymbol: coin_symbol, image },
@@ -87,6 +94,13 @@ exports.sellCoin = async (req, res) => {
   } = req.body;
 
   try {
+    const user = await User.findOne({ id: user_id });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.isFrozen) {
+        return res.status(403).json({ error: "Account is frozen. Trading disabled." });
+    }
+
     const result = await executeSell(user_id, coin_id, quantity, current_price);
 
     res.json({

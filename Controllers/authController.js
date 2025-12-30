@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const asyncHandler = require("express-async-handler");
+const speakeasy = require("speakeasy");
+const QRCode = require("qrcode");
 
 /**
  * @desc    Register a new user
@@ -218,9 +220,103 @@ const refresh = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @typedef {import("express").Request & { user: { id: string, role: string } }} AuthRequest
+ */
+
+/**
+ * @desc    Setup TOTP (Generate secret & QR)
+ * @route   GET /api/auth/setup-totp
+ */
+const setupTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
+    // 1. Check if user is admin
+    if (req.user.role !== 'admin') {
+        res.status(403).json({ message: "Access denied" });
+        return;
+    }
+
+    const user = await User.findOne({ id: req.user.id });
+    if (!user) {
+         res.status(404).json({ message: "User not found" });
+         return;
+    }
+
+    // 2. Generate Secret
+    const secret = speakeasy.generateSecret({
+        name: `NexChain Admin (${user.email})`
+    });
+
+    // 3. Generate QR Code
+    QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+        if (err) {
+            res.status(500).json({ message: "Error generating QR code" });
+            return;
+        }
+        // Send secret (valid temporarily, must be verified to trigger enabling)
+        // Ideally we don't save it yet OR save it to a temp field.
+        // For simplicity, we send it to client, client sends it back with code to verify.
+        // Then we save to DB.
+        res.json({
+            message: "Scan this QR code with Google Authenticator",
+            secret: secret.base32, // User needs this if they can't scan
+            qrCode: data_url
+        });
+    });
+});
+
+/**
+ * @desc    Verify TOTP and Enable
+ * @route   POST /api/auth/verify-totp
+ */
+const verifyTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
+     const { token, secret } = req.body; // Secret comes from client (setup flow) OR we use stored if just re-verifying
+    
+     if (req.user.role !== 'admin') {
+        res.status(403).json({ message: "Access denied" });
+        return;
+     }
+
+     // If enabling (secret provided in body), use that. Else use user.adminTotpSecret
+     let secretToVerify = secret;
+
+     const user = await User.findOne({ id: req.user.id }).select('+adminTotpSecret');
+
+     if (!secret && user.adminTotpSecret) {
+        secretToVerify = user.adminTotpSecret.base32;
+     }
+     
+     if (!secretToVerify) {
+        res.status(400).json({ message: "No TOTP secret provided or found" });
+        return;
+     }
+
+     const verified = speakeasy.totp.verify({
+        secret: secretToVerify,
+        encoding: 'base32',
+        token: token
+     });
+
+     if (verified) {
+         // If this was a setup (secret provided), save it now
+         if (secret) {
+             // Re-create proper secret object to store
+             // We only got base32 from client usually. But we can just store { base32: secret }
+             user.adminTotpSecret = { base32: secret };
+             await user.save();
+             res.json({ success: true, message: "2FA Enabled successfully" });
+         } else {
+             res.json({ success: true, message: "Code valid" });
+         }
+     } else {
+         res.status(400).json({ success: false, message: "Invalid Authenticator Code" });
+     }
+});
+
 module.exports = {
   register,
   verifyEmailOTP,
   login,
   refresh,
+  setupTOTP,
+  verifyTOTP
 };

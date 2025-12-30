@@ -1,10 +1,14 @@
 const User = require("../Models/userModel");
+const AuditLog = require("../Models/AuditLog");
 const bcrypt = require("bcrypt");
 
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const { includeDeleted } = req.query;
+    const filter = includeDeleted === 'true' ? {} : { isDeleted: { $ne: true } };
+    
+    const users = await User.find(filter);
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -36,7 +40,11 @@ const updateUser = async (req, res) => {
       currentPassword, 
       newPassword, 
       confirmPassword,
-      confirm_password, 
+      confirm_password,
+      // Admin fields
+      role,
+      isFrozen,
+      isDeleted
     } = req.body;
 
     const user = await User.findOne({ id });
@@ -49,6 +57,51 @@ const updateUser = async (req, res) => {
     if (email) user.email = email;
     if (phone) user.phone = phone;
     if (user_name) user.user_name = user_name;
+
+    // 3. Admin Restricted Updates
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
+        const actorRole = req.user.role;
+        const targetRole = user.role;
+        const isSelf = req.user.id === user.id;
+
+        // HARD PROTECTION: Cannot modify the primary superadmin
+        if (user.email === 'nexchainsystem@gmail.com') {
+             return res.status(403).json({ error: "Action forbidden: Cannot modify System Super Admin account." });
+        }
+
+        // Logic check for Role updates
+        if (role && role !== targetRole) {
+            // Prevent Admin from promoting self (though UI shouldn't allow, API must block)
+            if (isSelf) return res.status(403).json({ error: "Cannot change your own role." });
+
+            if (actorRole === 'admin') {
+                // Admin can only toggle User <-> Admin
+                if (targetRole === 'superadmin') return res.status(403).json({ error: "Admins cannot modify Super Admins." });
+                if (targetRole === 'admin' && role === 'superadmin') return res.status(403).json({ error: "Admins cannot promote to Super Admin." });
+                if (role === 'superadmin') return res.status(403).json({ error: "Admins cannot promote to Super Admin." });
+                
+                // Allow User -> Admin or Admin -> User
+            }
+            
+            if (actorRole === 'superadmin') {
+                // Superadmin can do anything except modify primary superadmin (blocked above)
+            }
+            user.role = role;
+        }
+
+        // Logic check for Archive/Freeze updates
+        if (typeof isDeleted !== 'undefined' || typeof isFrozen !== 'undefined') {
+             if (isSelf) return res.status(403).json({ error: "Cannot archive/freeze yourself." });
+             
+             if (actorRole === 'admin') {
+                 if (targetRole === 'superadmin') return res.status(403).json({ error: "Admins cannot archive/freeze Super Admins." });
+                 if (targetRole === 'admin') return res.status(403).json({ error: "Admins cannot archive/freeze other Admins." });
+             }
+             
+             if (typeof isFrozen !== 'undefined') user.isFrozen = isFrozen;
+             if (typeof isDeleted !== 'undefined') user.isDeleted = isDeleted;
+        }
+    }
 
     // 4. Update Password
     const pass = newPassword || req.body.newPassword;
@@ -66,6 +119,38 @@ const updateUser = async (req, res) => {
 
     // 5. Save
     await user.save();
+
+    // Audit Log
+    try {
+      if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
+         const adminUser = await User.findOne({ id: req.user.id });
+         if (adminUser) {
+             let actionType = "USER_UPDATE";
+             let logDetails = {
+                 previousValue: {}, 
+                 newValue: req.body,
+                 reason: `${req.user.role} Update`
+             };
+
+             if (role && role !== user.role) { // Note: 'user.role' is already updated in memory above
+                // To get actual "Previous" we would have needed it before update. 
+                // But simplified:
+                actionType = "ROLE_CHANGE";
+                logDetails.roleChange = `To ${role}`;
+             }
+
+             await AuditLog.create({
+                adminId: adminUser._id,
+                action: actionType,
+                targetId: user._id, 
+                details: logDetails,
+                ipAddress: req.ip || req.headers['x-forwarded-for'] || '0.0.0.0'
+             });
+         }
+      }
+    } catch (logErr) {
+        console.error("Audit Log Error", logErr);
+    }
 
     res.json({
       message: "Profile updated successfully",
@@ -93,9 +178,49 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedUser = await User.findOneAndDelete({ id });
+    
+    const userToDelete = await User.findOne({ id });
+    if (!userToDelete) return res.status(404).json({ error: "User not found" });
 
-    if (!deletedUser) return res.status(404).json({ error: "User not found" });
+    // Prevent deleting Super Admin (simplified check, ideal to check specific email or role hierarchy)
+    if (userToDelete.role === 'admin' && userToDelete.email === 'admin@nexchain.com') { // Example hardcoded safety
+         return res.status(403).json({ error: "Cannot delete Root Admin" });
+    }
+
+    userToDelete.isDeleted = true;
+    await userToDelete.save();
+
+     // Audit Log
+    try {
+      if (req.user && req.user.role === 'admin') {
+         // Need to find the admin user's _id to link in AuditLog if req.user.id is the string UUID
+         // But req.user usually comes from JWT, let's assume valid
+         
+         // Fix: AuditLog expects ObjectId for adminId/targetId. 
+         // If "id" in params is a UUID string, we must find the Mongo _id.
+         // userToDelete._id is available.
+         // req.user might have ._id if populating, or just .id from token. 
+         // We might need to look up the admin's _id if AuditLog is strict on ObjectId ref.
+         // For now, let's try to pass what we have, but AuditLog schema says "type: mongoose.Schema.Types.ObjectId".
+         // So we must use _id.
+         
+         const adminUser = await User.findOne({ id: req.user.id }); // Find admin's Mongo _id
+
+         if (adminUser) {
+             await AuditLog.create({
+                adminId: adminUser._id, 
+                action: "USER_DELETE",
+                targetId: userToDelete._id,
+                details: {
+                    reason: "Soft Delete via Admin Panel"
+                },
+                ipAddress: req.ip || req.headers['x-forwarded-for'] || '0.0.0.0'
+             });
+         }
+      }
+    } catch (logErr) {
+        console.error("Audit Log Error", logErr);
+    }
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {

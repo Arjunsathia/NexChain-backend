@@ -8,7 +8,7 @@ const {
   deleteUser,
   logoutUser,
 } = require("../Controllers/userController");
-const { protect, adminOnly } = require("../middleware/authMiddleware");
+const { protect, adminOnly, requireAdmin2FA } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
 router.get("/", protect, adminOnly, getUsers);
@@ -17,11 +17,11 @@ router.get("/:id", getUserById);
 // Update Profile Image
 router.put("/profile-image/:id", protect, upload.single("image"), updateProfileImage);
 
-// ✅ PUT ROUTE (NO IMAGE UPLOAD)
+// ✅ PUT ROUTE
 router.put("/:id", protect, updateUser);
 
 // ✅ DELETE ROUTE
-router.delete("/:id", protect, adminOnly, deleteUser);
+router.delete("/:id", protect, adminOnly, requireAdmin2FA, deleteUser);
 
 router.post("/logout", logoutUser);
 

@@ -21,6 +21,11 @@ exports.createOrder = async (req, res) => {
   try {
     const user = await User.findOne({ id: user_id });
     if (!user) return res.status(404).json({ error: "User not found" });
+    
+    // Check Freeze Status
+    if (user.isFrozen) {
+        return res.status(403).json({ error: "Account is frozen. Trading disabled." });
+    }
 
     // Determine price for value calculation
     let priceForCalc = limit_price;
