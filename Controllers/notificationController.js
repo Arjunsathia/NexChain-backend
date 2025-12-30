@@ -1,9 +1,19 @@
 const Notification = require('../Models/Notification');
+const User = require('../Models/userModel');
+
+// Helper to get user _id from req.user.id (UUID)
+const getUserMongoId = async (uuid) => {
+    const user = await User.findOne({ id: uuid });
+    return user ? user._id : null;
+};
 
 // Get all notifications for a user
 exports.getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ user: req.user._id })
+    const userId = await getUserMongoId(req.user.id);
+    if (!userId) return res.status(404).json({ message: "User not found" });
+
+    const notifications = await Notification.find({ user: userId })
       .sort({ createdAt: -1 }); // Newest first
     res.status(200).json(notifications);
   } catch (error) {
@@ -14,8 +24,11 @@ exports.getNotifications = async (req, res) => {
 // Mark a notification as read
 exports.markAsRead = async (req, res) => {
   try {
+    const userId = await getUserMongoId(req.user.id);
+    if (!userId) return res.status(404).json({ message: "User not found" });
+
     const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
+      { _id: req.params.id, user: userId },
       { isRead: true },
       { new: true }
     );
@@ -31,7 +44,10 @@ exports.markAsRead = async (req, res) => {
 // Delete a single notification
 exports.deleteNotification = async (req, res) => {
   try {
-    const notification = await Notification.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+    const userId = await getUserMongoId(req.user.id);
+    if (!userId) return res.status(404).json({ message: "User not found" });
+
+    const notification = await Notification.findOneAndDelete({ _id: req.params.id, user: userId });
     if (!notification) {
       return res.status(404).json({ message: 'Notification not found' });
     }
@@ -44,7 +60,10 @@ exports.deleteNotification = async (req, res) => {
 // Clear all notifications for a user
 exports.clearAllNotifications = async (req, res) => {
   try {
-    await Notification.deleteMany({ user: req.user._id });
+    const userId = await getUserMongoId(req.user.id);
+    if (!userId) return res.status(404).json({ message: "User not found" });
+
+    await Notification.deleteMany({ user: userId });
     res.status(200).json({ message: 'All notifications cleared successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error clearing notifications', error: error.message });
@@ -56,9 +75,13 @@ exports.createNotification = async (req, res) => {
   try {
     const { title, message, type, userId } = req.body;
     
-    // If userId is provided in body (e.g. admin sending), use it. Otherwise use current user (self-notification?)
-    // Usually notifications are system generated.
-    const targetUserId = userId || req.user._id;
+    let targetUserId = userId;
+    
+    // If no specific userId provided, fallback to current user (if found)
+    if (!targetUserId) {
+         const currentUser = await getUserMongoId(req.user.id);
+         if (currentUser) targetUserId = currentUser;
+    }
 
     const newNotification = new Notification({
       user: targetUserId,
