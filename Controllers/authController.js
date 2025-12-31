@@ -320,21 +320,44 @@ const verifyTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
  * @route   POST /api/auth/google
  */
 const googleLogin = asyncHandler(async (req, res) => {
-    const { credential } = req.body;
+    const { credential, googleAccessToken } = req.body;
 
-    if (!credential) {
+    let email, name, picture, email_verified;
+
+    if (googleAccessToken) {
+        // Access Token Flow (Custom Button)
+        const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: `Bearer ${googleAccessToken}` }
+        });
+        
+        if (!response.ok) {
+            res.status(400);
+            throw new Error('Failed to fetch Google user info');
+        }
+
+        const data = await response.json();
+        email = data.email;
+        name = data.name;
+        picture = data.picture;
+        email_verified = data.email_verified;
+
+    } else if (credential) {
+        // ID Token Flow (Google Button Component)
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        email = payload.email;
+        name = payload.name;
+        picture = payload.picture;
+        email_verified = payload.email_verified;
+
+    } else {
         res.status(400);
-        throw new Error('Google credential is required');
+        throw new Error('Google credential or access token is required');
     }
-
-    // Verify Google Token
-    const ticket = await client.verifyIdToken({
-        idToken: credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    const { email, name, picture, email_verified } = payload;
 
     if (!email_verified) {
         res.status(400);
@@ -354,7 +377,6 @@ const googleLogin = asyncHandler(async (req, res) => {
         // Generate a safe unique username
         const baseName = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
         let userName = baseName;
-        let suffix = 1;
         while (await User.findOne({ user_name: userName })) {
             userName = `${baseName}${Math.floor(Math.random() * 1000)}`;
         }
@@ -368,7 +390,6 @@ const googleLogin = asyncHandler(async (req, res) => {
             provider: 'google',
             emailVerified: true,
             image: picture,
-            // phone and password are now optional
         });
     }
 
@@ -376,7 +397,7 @@ const googleLogin = asyncHandler(async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate Tokens (Same logic as login)
+    // Generate Tokens
     const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
     const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, { expiresIn: "30d" });
 
