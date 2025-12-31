@@ -8,6 +8,8 @@ const bcrypt = require("bcrypt");
 const asyncHandler = require("express-async-handler");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
  * @desc    Register a new user
@@ -134,7 +136,7 @@ const login = asyncHandler(async (req, res) => {
     ],
   });
 
-  if (!user || !(await bcrypt.compare(password, user.password))) {
+  if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
     res.status(401).json({ message: "Invalid email or password" });
     return;
   }
@@ -312,10 +314,106 @@ const verifyTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
      }
 });
 
+
+/**
+ * @desc    Google Login
+ * @route   POST /api/auth/google
+ */
+const googleLogin = asyncHandler(async (req, res) => {
+    const { credential } = req.body;
+
+    if (!credential) {
+        res.status(400);
+        throw new Error('Google credential is required');
+    }
+
+    // Verify Google Token
+    const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture, email_verified } = payload;
+
+    if (!email_verified) {
+        res.status(400);
+        throw new Error('Google email not verified');
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+        // Block Admin from Google Login
+        if (user.role === 'admin' || user.role === 'superadmin') {
+            res.status(403);
+            throw new Error('Admins must login via password/2FA');
+        }
+    } else {
+        // Create User
+        // Generate a safe unique username
+        const baseName = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        let userName = baseName;
+        let suffix = 1;
+        while (await User.findOne({ user_name: userName })) {
+            userName = `${baseName}${Math.floor(Math.random() * 1000)}`;
+        }
+
+        user = await User.create({
+            id: uuidv4(),
+            name,
+            email,
+            user_name: userName,
+            role: 'user',
+            provider: 'google',
+            emailVerified: true,
+            image: picture,
+            // phone and password are now optional
+        });
+    }
+
+    // Update login time
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate Tokens (Same logic as login)
+    const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
+    const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, { expiresIn: "30d" });
+
+    // Set Cookies
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie("token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000,
+    });
+
+    res.json({
+        success: true,
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            user_name: user.user_name,
+            image: user.image,
+        },
+        accessToken,
+    });
+});
+
 module.exports = {
   register,
   verifyEmailOTP,
   login,
+  googleLogin,
   refresh,
   setupTOTP,
   verifyTOTP

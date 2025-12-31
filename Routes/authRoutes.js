@@ -5,6 +5,7 @@ const {
   register, 
   verifyEmailOTP, 
   login, 
+  googleLogin,
   refresh,
   setupTOTP, 
   verifyTOTP 
@@ -22,6 +23,7 @@ const otpLimiter = rateLimit({
 router.post("/register", register);
 router.post("/verify-email-otp", otpLimiter, verifyEmailOTP);
 router.post("/login", login);
+router.post("/google", googleLogin);
 router.post("/refresh", refresh);
 router.get("/setup-totp", protect, setupTOTP);
 router.post("/verify-totp", protect, verifyTOTP);
