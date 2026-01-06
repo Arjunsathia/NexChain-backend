@@ -141,6 +141,12 @@ const login = asyncHandler(async (req, res) => {
     return;
   }
 
+  // Check if user is frozen
+  if (user.isFrozen) {
+    res.status(403).json({ message: "Your account has been frozen. Please contact support." });
+    return;
+  }
+
   if (!user.emailVerified) {
     res.status(403).json({ message: "Email not verified. Please verify your email first." });
     return;
@@ -371,6 +377,12 @@ const googleLogin = asyncHandler(async (req, res) => {
         if (user.role === 'admin' || user.role === 'superadmin') {
             res.status(403);
             throw new Error('Admins must login via password/2FA');
+        }
+
+        // Check if frozen
+        if (user.isFrozen) {
+            res.status(403);
+            throw new Error('Your account has been frozen. Please contact support.');
         }
     } else {
         // Create User
