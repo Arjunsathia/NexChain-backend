@@ -1,4 +1,4 @@
-const FrozenCoin = require("../models/frozenCoinModel");
+const FrozenCoin = require('../Models/frozenCoinModel');
 
 // @desc    Get all frozen coins
 // @route   GET /api/coins/frozen
