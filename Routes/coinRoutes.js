@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { getFrozenCoins, freezeCoin, unfreezeCoin } = require("../controllers/coinController");
+// const { getFrozenCoins, freezeCoin, unfreezeCoin } = require("../controllers/coinController");
+const { getFrozenCoins, freezeCoin, unfreezeCoin } = require("../Controllers/coinController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 // Public route to get blacklist
