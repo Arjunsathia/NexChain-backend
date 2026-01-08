@@ -129,10 +129,12 @@ const verifyEmailOTP = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  const identifier = email.toLowerCase();
+  
   const user = await User.findOne({
     $or: [
-      { email: { $regex: new RegExp(`^${email}$`, "i") } },
-      { user_name: { $regex: new RegExp(`^${email}$`, "i") } },
+      { email: identifier },
+      { user_name: identifier },
     ],
   });
 

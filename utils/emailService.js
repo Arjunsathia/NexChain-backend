@@ -39,25 +39,29 @@ const sendEmail = async (to, subject, html) => {
  * Sends an OTP email to the user.
  */
 const sendOTPEmail = async (email, otp) => {
-  const subject = "Your NexChain Verification OTP";
-  const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <h2 style="color: #4A90E2; text-align: center;">NexChain Verification</h2>
-        <p>Hello,</p>
-        <p>Use the following 6-digit OTP to verify your account. This code is valid for 10 minutes and can only be used once.</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; border: 1px dashed #4A90E2;">
+  const mailOptions = {
+    from: `"NexChain Security" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Your NexChain Verification Code",
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
+        <div style="max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #333; text-align: center;">Verify Your Account</h2>
+          <p style="color: #666; font-size: 16px; text-align: center;">Your One-Time Password (OTP) is:</p>
+          <div style="font-size: 32px; font-weight: bold; color: #007bff; text-align: center; margin: 20px 0; letter-spacing: 5px;">
             ${otp}
-          </span>
+          </div>
+          <p style="color: #999; font-size: 14px; text-align: center;">This code expires in 10 minutes.</p>
         </div>
-        <p>For security, please do not share this code with anyone.</p>
-        <p>If you didn't request this code, please ignore this email.</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-        <p style="font-size: 12px; color: #888; text-align: center;">&copy; 2025 NexChain. All rights reserved.</p>
       </div>
-    `;
+    `,
+  };
 
-  return await sendEmail(email, subject, html);
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
 };
 
 module.exports = {
