@@ -66,7 +66,7 @@ const register = asyncHandler(async (req, res) => {
     emailVerified: false,
   });
 
-  // Generate and send Verification OTP
+  // Create and dispatch email verification OTP
   const otp = generateOTP();
   const secret = process.env.OTP_SECRET || "nexchain_otp_secret_key";
   const otpHash = hashOTP(otp, secret);
@@ -272,7 +272,7 @@ const refresh = asyncHandler(async (req, res) => {
  * @route   GET /api/auth/setup-totp
  */
 const setupTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
-  // 1. Check if user is admin
+  // Check if user has admin privileges
   if (req.user.role !== "admin") {
     res.status(403).json({ message: "Access denied" });
     return;
@@ -284,21 +284,18 @@ const setupTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
     return;
   }
 
-  // 2. Generate Secret
+  // Generate TOTP secret
   const secret = speakeasy.generateSecret({
     name: `NexChain Admin (${user.email})`,
   });
 
-  // 3. Generate QR Code
+  // Generate QR Code for client app scanning
   QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
     if (err) {
       res.status(500).json({ message: "Error generating QR code" });
       return;
     }
-    // Send secret (valid temporarily, must be verified to trigger enabling)
-    // Ideally we don't save it yet OR save it to a temp field.
-    // For simplicity, we send it to client, client sends it back with code to verify.
-    // Then we save to DB.
+    // Send temporary secret to client for verification (app scanning)
     res.json({
       message: "Scan this QR code with Google Authenticator",
       secret: secret.base32, // User needs this if they can't scan
@@ -344,8 +341,7 @@ const verifyTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
   if (verified) {
     // If this was a setup (secret provided), save it now
     if (secret) {
-      // Re-create proper secret object to store
-      // We only got base32 from client usually. But we can just store { base32: secret }
+      // Store the secret after successful verification
       user.adminTotpSecret = { base32: secret };
       await user.save();
       res.json({ success: true, message: "2FA Enabled successfully" });
