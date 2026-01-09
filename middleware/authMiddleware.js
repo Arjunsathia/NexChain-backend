@@ -3,8 +3,6 @@ const speakeasy = require("speakeasy");
 const User = require("../Models/userModel");
 
 const protect = (req, res, next) => {
-
-
   let token;
 
   // ✅ Check for token in cookie
@@ -28,7 +26,7 @@ const protect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     if (!decoded || typeof decoded === "string") {
       res.status(401).json({ message: "Invalid token payload" });
       return;
@@ -42,7 +40,10 @@ const protect = (req, res, next) => {
 };
 
 const adminOnly = (req, res, next) => {
-  if (req.user && (req.user.role === "admin" || req.user.role === "superadmin")) {
+  if (
+    req.user &&
+    (req.user.role === "admin" || req.user.role === "superadmin")
+  ) {
     next();
   } else {
     res.status(403).json({ message: "Access denied: Admins only" });
@@ -51,43 +52,48 @@ const adminOnly = (req, res, next) => {
 
 const requireAdmin2FA = async (req, res, next) => {
   // 1. Must be admin first
-  if (!req.user || (req.user.role !== "admin" && req.user.role !== "superadmin")) {
-      return res.status(403).json({ message: "Access denied: Admins only" });
+  if (
+    !req.user ||
+    (req.user.role !== "admin" && req.user.role !== "superadmin")
+  ) {
+    return res.status(403).json({ message: "Access denied: Admins only" });
   }
 
   // 2. Check for 2FA code in Headers (X-Admin-2FA-Code)
-  const code = req.headers['x-admin-2fa-code'];
+  const code = req.headers["x-admin-2fa-code"];
 
   if (!code) {
-      return res.status(403).json({ 
-          message: "2FA Required", 
-          require2FA: true 
-      });
+    return res.status(403).json({
+      message: "2FA Required",
+      require2FA: true,
+    });
   }
 
   try {
-      // 3. Verify Code
-      const user = await User.findOne({ id: req.user.id }).select('+adminTotpSecret');
-      
-      if (!user || !user.adminTotpSecret || !user.adminTotpSecret.base32) {
-          return res.status(400).json({ message: "2FA not set up for this admin" });
-      }
+    // 3. Verify Code
+    const user = await User.findOne({ id: req.user.id }).select(
+      "+adminTotpSecret",
+    );
 
-      const verified = speakeasy.totp.verify({
-        secret: user.adminTotpSecret.base32,
-        encoding: 'base32',
-        token: code,
-        window: 1 // Allow 30s slack
-      });
+    if (!user || !user.adminTotpSecret || !user.adminTotpSecret.base32) {
+      return res.status(400).json({ message: "2FA not set up for this admin" });
+    }
 
-      if (!verified) {
-         return res.status(403).json({ message: "Invalid 2FA Code" });
-      }
+    const verified = speakeasy.totp.verify({
+      secret: user.adminTotpSecret.base32,
+      encoding: "base32",
+      token: code,
+      window: 1, // Allow 30s slack
+    });
 
-      next();
+    if (!verified) {
+      return res.status(403).json({ message: "Invalid 2FA Code" });
+    }
+
+    next();
   } catch (error) {
-      console.error("2FA Error:", error);
-      res.status(500).json({ message: "Server error during 2FA check" });
+    console.error("2FA Error:", error);
+    res.status(500).json({ message: "Server error during 2FA check" });
   }
 };
 

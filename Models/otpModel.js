@@ -1,28 +1,31 @@
 const mongoose = require("mongoose");
 
-const otpSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    index: true,
+const otpSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    otpHash: {
+      type: String,
+      required: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+    },
+    attemptsLeft: {
+      type: Number,
+      default: 3,
+    },
+    used: {
+      type: Boolean,
+      default: false,
+    },
   },
-  otpHash: {
-    type: String,
-    required: true,
-  },
-  expiresAt: {
-    type: Date,
-    required: true,
-  },
-  attemptsLeft: {
-    type: Number,
-    default: 3,
-  },
-  used: {
-    type: Boolean,
-    default: false,
-  },
-}, { timestamps: true });
+  { timestamps: true },
+);
 
 // TTL Index to automatically delete expired OTPs
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

@@ -63,9 +63,9 @@ app.use("/api/coins", coinRoutes);
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error("🔥 Error:", err.message);
-  res.status(500).json({ 
-    success: false, 
-    message: err.message || "Internal Server Error" 
+  res.status(500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
   });
 });
 

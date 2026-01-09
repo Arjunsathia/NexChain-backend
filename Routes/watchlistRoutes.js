@@ -4,7 +4,7 @@ const {
   addToWatchList,
   getWatchList,
   removeFromWatchList,
-  getTrendingCoin
+  getTrendingCoin,
 } = require("../Controllers/watchlistController");
 const { protect } = require("../middleware/authMiddleware");
 

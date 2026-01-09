@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const { rateLimit } = require("express-rate-limit");
-const { 
-  register, 
-  verifyEmailOTP, 
-  login, 
+const {
+  register,
+  verifyEmailOTP,
+  login,
   googleLogin,
   refresh,
-  setupTOTP, 
-  verifyTOTP 
+  setupTOTP,
+  verifyTOTP,
 } = require("../Controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 

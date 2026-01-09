@@ -17,7 +17,7 @@ const watchListSchema = new mongoose.Schema(
       price: [Number],
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("WatchList", watchListSchema);

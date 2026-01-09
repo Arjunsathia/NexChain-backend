@@ -19,7 +19,14 @@ const register = asyncHandler(async (req, res) => {
   const { name, phone, password, confirm_password, role } = req.body;
   let { email, user_name } = req.body;
 
-  if (!name || !email || !phone || !user_name || !password || !confirm_password) {
+  if (
+    !name ||
+    !email ||
+    !phone ||
+    !user_name ||
+    !password ||
+    !confirm_password
+  ) {
     res.status(400).json({ message: "All fields are required" });
     return;
   }
@@ -87,15 +94,21 @@ const register = asyncHandler(async (req, res) => {
  */
 const verifyEmailOTP = asyncHandler(async (req, res) => {
   let { email, otp } = req.body;
-  
+
   if (email) email = email.toLowerCase();
 
   const secret = process.env.OTP_SECRET || "nexchain_otp_secret_key";
   const otpHash = hashOTP(otp, secret);
 
-  const otpRecord = await OTP.findOne({ email, used: false }).sort({ createdAt: -1 });
+  const otpRecord = await OTP.findOne({ email, used: false }).sort({
+    createdAt: -1,
+  });
 
-  if (!otpRecord || new Date() > otpRecord.expiresAt || otpRecord.attemptsLeft <= 0) {
+  if (
+    !otpRecord ||
+    new Date() > otpRecord.expiresAt ||
+    otpRecord.attemptsLeft <= 0
+  ) {
     res.status(400).json({ message: "Invalid or expired OTP" });
     return;
   }
@@ -103,7 +116,9 @@ const verifyEmailOTP = asyncHandler(async (req, res) => {
   if (otpRecord.otpHash !== otpHash) {
     otpRecord.attemptsLeft -= 1;
     await otpRecord.save();
-    res.status(400).json({ message: "Invalid OTP", attemptsLeft: otpRecord.attemptsLeft });
+    res
+      .status(400)
+      .json({ message: "Invalid OTP", attemptsLeft: otpRecord.attemptsLeft });
     return;
   }
 
@@ -119,7 +134,10 @@ const verifyEmailOTP = asyncHandler(async (req, res) => {
   user.emailVerified = true;
   await user.save();
 
-  res.json({ success: true, message: "Email verified successfully. You can now login." });
+  res.json({
+    success: true,
+    message: "Email verified successfully. You can now login.",
+  });
 });
 
 /**
@@ -130,27 +148,34 @@ const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const identifier = email.toLowerCase();
-  
+
   const user = await User.findOne({
-    $or: [
-      { email: identifier },
-      { user_name: identifier },
-    ],
+    $or: [{ email: identifier }, { user_name: identifier }],
   });
 
-  if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+  if (
+    !user ||
+    !user.password ||
+    !(await bcrypt.compare(password, user.password))
+  ) {
     res.status(401).json({ message: "Invalid email or password" });
     return;
   }
 
   // Check if user is frozen
   if (user.isFrozen) {
-    res.status(403).json({ message: "Your account has been frozen. Please contact support." });
+    res
+      .status(403)
+      .json({
+        message: "Your account has been frozen. Please contact support.",
+      });
     return;
   }
 
   if (!user.emailVerified) {
-    res.status(403).json({ message: "Email not verified. Please verify your email first." });
+    res
+      .status(403)
+      .json({ message: "Email not verified. Please verify your email first." });
     return;
   }
 
@@ -161,13 +186,13 @@ const login = asyncHandler(async (req, res) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "15m" },
   );
 
   const refreshToken = jwt.sign(
     { id: user.id },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-    { expiresIn: "30d" }
+    { expiresIn: "30d" },
   );
 
   res.cookie("refreshToken", refreshToken, {
@@ -198,8 +223,6 @@ const login = asyncHandler(async (req, res) => {
   });
 });
 
-
-
 const refresh = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
@@ -208,8 +231,11 @@ const refresh = asyncHandler(async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
-    
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+    );
+
     if (!decoded || typeof decoded === "string" || !decoded.id) {
       res.status(401).json({ message: "Invalid token payload" });
       return;
@@ -221,8 +247,17 @@ const refresh = asyncHandler(async (req, res) => {
       return;
     }
 
-    const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    res.cookie("token", accessToken, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", maxAge: 15 * 60 * 1000 });
+    const accessToken = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" },
+    );
+    res.cookie("token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000,
+    });
     res.json({ accessToken });
   } catch {
     res.status(401).json({ message: "Invalid refresh token" });
@@ -239,39 +274,39 @@ const refresh = asyncHandler(async (req, res) => {
  * @route   GET /api/auth/setup-totp
  */
 const setupTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
-    // 1. Check if user is admin
-    if (req.user.role !== 'admin') {
-        res.status(403).json({ message: "Access denied" });
-        return;
+  // 1. Check if user is admin
+  if (req.user.role !== "admin") {
+    res.status(403).json({ message: "Access denied" });
+    return;
+  }
+
+  const user = await User.findOne({ id: req.user.id });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  // 2. Generate Secret
+  const secret = speakeasy.generateSecret({
+    name: `NexChain Admin (${user.email})`,
+  });
+
+  // 3. Generate QR Code
+  QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+    if (err) {
+      res.status(500).json({ message: "Error generating QR code" });
+      return;
     }
-
-    const user = await User.findOne({ id: req.user.id });
-    if (!user) {
-         res.status(404).json({ message: "User not found" });
-         return;
-    }
-
-    // 2. Generate Secret
-    const secret = speakeasy.generateSecret({
-        name: `NexChain Admin (${user.email})`
+    // Send secret (valid temporarily, must be verified to trigger enabling)
+    // Ideally we don't save it yet OR save it to a temp field.
+    // For simplicity, we send it to client, client sends it back with code to verify.
+    // Then we save to DB.
+    res.json({
+      message: "Scan this QR code with Google Authenticator",
+      secret: secret.base32, // User needs this if they can't scan
+      qrCode: data_url,
     });
-
-    // 3. Generate QR Code
-    QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
-        if (err) {
-            res.status(500).json({ message: "Error generating QR code" });
-            return;
-        }
-        // Send secret (valid temporarily, must be verified to trigger enabling)
-        // Ideally we don't save it yet OR save it to a temp field.
-        // For simplicity, we send it to client, client sends it back with code to verify.
-        // Then we save to DB.
-        res.json({
-            message: "Scan this QR code with Google Authenticator",
-            secret: secret.base32, // User needs this if they can't scan
-            qrCode: data_url
-        });
-    });
+  });
 });
 
 /**
@@ -279,169 +314,184 @@ const setupTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
  * @route   POST /api/auth/verify-totp
  */
 const verifyTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
-     const { token, secret } = req.body; // Secret comes from client (setup flow) OR we use stored if just re-verifying
-    
-     if (req.user.role !== 'admin') {
-        res.status(403).json({ message: "Access denied" });
-        return;
-     }
+  const { token, secret } = req.body; // Secret comes from client (setup flow) OR we use stored if just re-verifying
 
-     // If enabling (secret provided in body), use that. Else use user.adminTotpSecret
-     let secretToVerify = secret;
+  if (req.user.role !== "admin") {
+    res.status(403).json({ message: "Access denied" });
+    return;
+  }
 
-     const user = await User.findOne({ id: req.user.id }).select('+adminTotpSecret');
+  // If enabling (secret provided in body), use that. Else use user.adminTotpSecret
+  let secretToVerify = secret;
 
-     if (!secret && user.adminTotpSecret) {
-        secretToVerify = user.adminTotpSecret.base32;
-     }
-     
-     if (!secretToVerify) {
-        res.status(400).json({ message: "No TOTP secret provided or found" });
-        return;
-     }
+  const user = await User.findOne({ id: req.user.id }).select(
+    "+adminTotpSecret",
+  );
 
-     const verified = speakeasy.totp.verify({
-        secret: secretToVerify,
-        encoding: 'base32',
-        token: token
-     });
+  if (!secret && user.adminTotpSecret) {
+    secretToVerify = user.adminTotpSecret.base32;
+  }
 
-     if (verified) {
-         // If this was a setup (secret provided), save it now
-         if (secret) {
-             // Re-create proper secret object to store
-             // We only got base32 from client usually. But we can just store { base32: secret }
-             user.adminTotpSecret = { base32: secret };
-             await user.save();
-             res.json({ success: true, message: "2FA Enabled successfully" });
-         } else {
-             res.json({ success: true, message: "Code valid" });
-         }
-     } else {
-         res.status(400).json({ success: false, message: "Invalid Authenticator Code" });
-     }
+  if (!secretToVerify) {
+    res.status(400).json({ message: "No TOTP secret provided or found" });
+    return;
+  }
+
+  const verified = speakeasy.totp.verify({
+    secret: secretToVerify,
+    encoding: "base32",
+    token: token,
+  });
+
+  if (verified) {
+    // If this was a setup (secret provided), save it now
+    if (secret) {
+      // Re-create proper secret object to store
+      // We only got base32 from client usually. But we can just store { base32: secret }
+      user.adminTotpSecret = { base32: secret };
+      await user.save();
+      res.json({ success: true, message: "2FA Enabled successfully" });
+    } else {
+      res.json({ success: true, message: "Code valid" });
+    }
+  } else {
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid Authenticator Code" });
+  }
 });
-
 
 /**
  * @desc    Google Login
  * @route   POST /api/auth/google
  */
 const googleLogin = asyncHandler(async (req, res) => {
-    const { credential, googleAccessToken } = req.body;
+  const { credential, googleAccessToken } = req.body;
 
-    let email, name, picture, email_verified;
+  let email, name, picture, email_verified;
 
-    if (googleAccessToken) {
-        // Access Token Flow (Custom Button)
-        const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { Authorization: `Bearer ${googleAccessToken}` }
-        });
-        
-        if (!response.ok) {
-            res.status(400);
-            throw new Error('Failed to fetch Google user info');
-        }
+  if (googleAccessToken) {
+    // Access Token Flow (Custom Button)
+    const response = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: { Authorization: `Bearer ${googleAccessToken}` },
+      },
+    );
 
-        const data = await response.json();
-        email = data.email;
-        name = data.name;
-        picture = data.picture;
-        email_verified = data.email_verified;
-
-    } else if (credential) {
-        // ID Token Flow (Google Button Component)
-        const ticket = await client.verifyIdToken({
-            idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID,
-        });
-
-        const payload = ticket.getPayload();
-        email = payload.email;
-        name = payload.name;
-        picture = payload.picture;
-        email_verified = payload.email_verified;
-
-    } else {
-        res.status(400);
-        throw new Error('Google credential or access token is required');
+    if (!response.ok) {
+      res.status(400);
+      throw new Error("Failed to fetch Google user info");
     }
 
-    if (!email_verified) {
-        res.status(400);
-        throw new Error('Google email not verified');
+    const data = await response.json();
+    email = data.email;
+    name = data.name;
+    picture = data.picture;
+    email_verified = data.email_verified;
+  } else if (credential) {
+    // ID Token Flow (Google Button Component)
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    email = payload.email;
+    name = payload.name;
+    picture = payload.picture;
+    email_verified = payload.email_verified;
+  } else {
+    res.status(400);
+    throw new Error("Google credential or access token is required");
+  }
+
+  if (!email_verified) {
+    res.status(400);
+    throw new Error("Google email not verified");
+  }
+
+  let user = await User.findOne({ email });
+
+  if (user) {
+    // Block Admin from Google Login
+    if (user.role === "admin" || user.role === "superadmin") {
+      res.status(403);
+      throw new Error("Admins must login via password/2FA");
     }
 
-    let user = await User.findOne({ email });
-
-    if (user) {
-        // Block Admin from Google Login
-        if (user.role === 'admin' || user.role === 'superadmin') {
-            res.status(403);
-            throw new Error('Admins must login via password/2FA');
-        }
-
-        // Check if frozen
-        if (user.isFrozen) {
-            res.status(403);
-            throw new Error('Your account has been frozen. Please contact support.');
-        }
-    } else {
-        // Create User
-        // Generate a safe unique username
-        const baseName = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-        let userName = baseName;
-        while (await User.findOne({ user_name: userName })) {
-            userName = `${baseName}${Math.floor(Math.random() * 1000)}`;
-        }
-
-        user = await User.create({
-            id: uuidv4(),
-            name,
-            email,
-            user_name: userName,
-            role: 'user',
-            provider: 'google',
-            emailVerified: true,
-            image: picture,
-        });
+    // Check if frozen
+    if (user.isFrozen) {
+      res.status(403);
+      throw new Error("Your account has been frozen. Please contact support.");
+    }
+  } else {
+    // Create User
+    // Generate a safe unique username
+    const baseName = email
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    let userName = baseName;
+    while (await User.findOne({ user_name: userName })) {
+      userName = `${baseName}${Math.floor(Math.random() * 1000)}`;
     }
 
-    // Update login time
-    user.lastLogin = new Date();
-    await user.save();
-
-    // Generate Tokens
-    const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, { expiresIn: "30d" });
-
-    // Set Cookies
-    res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+    user = await User.create({
+      id: uuidv4(),
+      name,
+      email,
+      user_name: userName,
+      role: "user",
+      provider: "google",
+      emailVerified: true,
+      image: picture,
     });
+  }
 
-    res.cookie("token", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000,
-    });
+  // Update login time
+  user.lastLogin = new Date();
+  await user.save();
 
-    res.json({
-        success: true,
-        user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            user_name: user.user_name,
-            image: user.image,
-        },
-        accessToken,
-    });
+  // Generate Tokens
+  const accessToken = jwt.sign(
+    { id: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" },
+  );
+  const refreshToken = jwt.sign(
+    { id: user.id },
+    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+    { expiresIn: "30d" },
+  );
+
+  // Set Cookies
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+
+  res.cookie("token", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000,
+  });
+
+  res.json({
+    success: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      user_name: user.user_name,
+      image: user.image,
+    },
+    accessToken,
+  });
 });
 
 module.exports = {
@@ -451,5 +501,5 @@ module.exports = {
   googleLogin,
   refresh,
   setupTOTP,
-  verifyTOTP
+  verifyTOTP,
 };

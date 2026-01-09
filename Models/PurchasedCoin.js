@@ -25,15 +25,15 @@ const purchasedCoinSchema = new mongoose.Schema({
   quantity: {
     type: Number,
     required: true,
-    default: 1
+    default: 1,
   },
   totalCost: {
     type: Number,
-    required: true
+    required: true,
   },
   fees: {
     type: Number,
-    default: 0
+    default: 0,
   },
   image: {
     type: String,

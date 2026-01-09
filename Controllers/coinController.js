@@ -1,4 +1,4 @@
-const FrozenCoin = require('../Models/frozenCoinModel');
+const FrozenCoin = require("../Models/frozenCoinModel");
 
 // @desc    Get all frozen coins
 // @route   GET /api/coins/frozen
@@ -7,8 +7,8 @@ exports.getFrozenCoins = async (req, res) => {
   try {
     const frozenCoins = await FrozenCoin.find({}).select("coinId -_id");
     // Return array of IDs for easy filtering
-    const ids = frozenCoins.map(c => c.coinId);
-    
+    const ids = frozenCoins.map((c) => c.coinId);
+
     res.status(200).json({
       success: true,
       count: ids.length,
@@ -26,26 +26,30 @@ exports.freezeCoin = async (req, res) => {
   const { coinId, symbol, name } = req.body;
 
   if (!coinId || !symbol) {
-    return res.status(400).json({ success: false, message: "Coin ID and Symbol are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Coin ID and Symbol are required" });
   }
 
   try {
     const exists = await FrozenCoin.findOne({ coinId });
     if (exists) {
-      return res.status(400).json({ success: false, message: "Coin is already frozen" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Coin is already frozen" });
     }
 
     const frozenCoin = await FrozenCoin.create({
       coinId,
       symbol,
       name: name || symbol,
-      frozenBy: req.user._id
+      frozenBy: req.user._id,
     });
 
     res.status(201).json({
       success: true,
       data: frozenCoin,
-      message: `${name || coinId} has been frozen successfully`
+      message: `${name || coinId} has been frozen successfully`,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -60,14 +64,16 @@ exports.unfreezeCoin = async (req, res) => {
 
   try {
     const result = await FrozenCoin.findOneAndDelete({ coinId });
-    
+
     if (!result) {
-      return res.status(404).json({ success: false, message: "Coin not found in frozen list" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Coin not found in frozen list" });
     }
 
     res.status(200).json({
       success: true,
-      message: "Coin has been unfrozen successfully"
+      message: "Coin has been unfrozen successfully",
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

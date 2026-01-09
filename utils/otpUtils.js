@@ -9,14 +9,11 @@ const generateOTP = () => {
 
 /**
  * Hashes an OTP using HMAC-SHA256.
- * @param {string} otp 
- * @param {string} secret 
+ * @param {string} otp
+ * @param {string} secret
  */
 const hashOTP = (otp, secret) => {
-  return crypto
-    .createHmac("sha256", secret)
-    .update(otp)
-    .digest("hex");
+  return crypto.createHmac("sha256", secret).update(otp).digest("hex");
 };
 
 module.exports = {

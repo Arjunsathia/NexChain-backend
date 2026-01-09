@@ -10,7 +10,9 @@ exports.addToWatchList = async (req, res) => {
     }
 
     if (!user_id || !id) {
-       return res.status(400).json({ message: "User ID and Coin ID are required" });
+      return res
+        .status(400)
+        .json({ message: "User ID and Coin ID are required" });
     }
 
     // Check if this user has already saved this coin
@@ -32,15 +34,15 @@ exports.addToWatchList = async (req, res) => {
 
 exports.getWatchList = async (req, res) => {
   try {
-    const { id } = req.query; 
+    const { id } = req.query;
     let { user_id } = req.query;
 
     if (!user_id && req.user) {
-        user_id = req.user.id;
+      user_id = req.user.id;
     }
 
     if (!user_id) {
-        return res.status(400).json({ message: "User ID required" });
+      return res.status(400).json({ message: "User ID required" });
     }
 
     const filter = { user_id };
@@ -62,7 +64,7 @@ exports.removeFromWatchList = async (req, res) => {
     let { user_id, id } = req.query;
 
     if (!user_id && req.user) {
-        user_id = req.user.id;
+      user_id = req.user.id;
     }
 
     if (!user_id || !id) {
@@ -97,11 +99,13 @@ exports.getTrendingCoin = async (req, res) => {
           _id: "$id",
           count: { $sum: 1 },
           symbol: { $first: "$symbol" },
-          price_change_percentage_24h: { $first: "$price_change_percentage_24h" }
-        }
+          price_change_percentage_24h: {
+            $first: "$price_change_percentage_24h",
+          },
+        },
       },
       { $sort: { count: -1 } },
-      { $limit: 1 }
+      { $limit: 1 },
     ]);
 
     if (trending.length > 0) {

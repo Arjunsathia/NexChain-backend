@@ -1,16 +1,16 @@
 // Routes/purchaseRoutes.js - UPDATED
 const express = require("express");
 const router = express.Router();
-const { 
+const {
   getUserPurchases,
   buyCoin,
   sellCoin,
-  getUserBalance, 
+  getUserBalance,
   resetBalance,
   getUserHoldings,
   getUserTransactionHistory,
   getPlatformStats,
-  getTodayTransactions
+  getTodayTransactions,
 } = require("../Controllers/purchaseController");
 const { protect } = require("../middleware/authMiddleware");
 

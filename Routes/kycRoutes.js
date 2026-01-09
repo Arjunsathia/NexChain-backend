@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { submitKYC, getKYCStatus, verifyKYC } = require("../Controllers/kycController");
+const {
+  submitKYC,
+  getKYCStatus,
+  verifyKYC,
+} = require("../Controllers/kycController");
 const { protect } = require("../middleware/authMiddleware");
 
 router.post("/submit", protect, submitKYC);

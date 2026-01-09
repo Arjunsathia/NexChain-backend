@@ -1,4 +1,4 @@
-const Feedback = require('../Models/Feedback');
+const Feedback = require("../Models/Feedback");
 
 // @desc    Submit new feedback
 // @route   POST /api/feedback
@@ -10,28 +10,28 @@ const submitFeedback = async (req, res) => {
     if (!message || !type) {
       return res.status(400).json({
         success: false,
-        message: 'Message and type are required'
+        message: "Message and type are required",
       });
     }
 
     const feedback = await Feedback.create({
       type,
       message,
-      userEmail: userEmail || '',
-      pageUrl: req.headers.referer || '',
-      userAgent: req.headers['user-agent'] || ''
+      userEmail: userEmail || "",
+      pageUrl: req.headers.referer || "",
+      userAgent: req.headers["user-agent"] || "",
     });
 
     res.status(201).json({
       success: true,
       data: feedback,
-      message: 'Feedback submitted successfully'
+      message: "Feedback submitted successfully",
     });
   } catch (error) {
-    console.error('Submit feedback error:', error);
+    console.error("Submit feedback error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while submitting feedback'
+      message: "Server error while submitting feedback",
     });
   }
 };
@@ -42,17 +42,17 @@ const submitFeedback = async (req, res) => {
 const getFeedback = async (req, res) => {
   try {
     const feedbacks = await Feedback.find().sort({ createdAt: -1 });
-    
+
     res.json({
       success: true,
       data: feedbacks,
-      count: feedbacks.length
+      count: feedbacks.length,
     });
   } catch (error) {
-    console.error('Get feedback error:', error);
+    console.error("Get feedback error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching feedback'
+      message: "Server error while fetching feedback",
     });
   }
 };
@@ -63,14 +63,14 @@ const getFeedback = async (req, res) => {
 const getFeedbackStats = async (req, res) => {
   try {
     const total = await Feedback.countDocuments();
-    const newCount = await Feedback.countDocuments({ status: 'new' });
-    const inProgress = await Feedback.countDocuments({ status: 'in-progress' });
-    const resolved = await Feedback.countDocuments({ status: 'resolved' });
-    
+    const newCount = await Feedback.countDocuments({ status: "new" });
+    const inProgress = await Feedback.countDocuments({ status: "in-progress" });
+    const resolved = await Feedback.countDocuments({ status: "resolved" });
+
     // Calculate today's feedback (last 24 hours)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = await Feedback.countDocuments({
-      createdAt: { $gte: twentyFourHoursAgo }
+      createdAt: { $gte: twentyFourHoursAgo },
     });
 
     res.json({
@@ -80,14 +80,14 @@ const getFeedbackStats = async (req, res) => {
         today,
         new: newCount,
         inProgress,
-        resolved
-      }
+        resolved,
+      },
     });
   } catch (error) {
-    console.error('Get feedback stats error:', error);
+    console.error("Get feedback stats error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching stats'
+      message: "Server error while fetching stats",
     });
   }
 };
@@ -98,23 +98,23 @@ const getFeedbackStats = async (req, res) => {
 const getFeedbackById = async (req, res) => {
   try {
     const feedback = await Feedback.findById(req.params.id);
-    
+
     if (!feedback) {
       return res.status(404).json({
         success: false,
-        message: 'Feedback not found'
+        message: "Feedback not found",
       });
     }
 
     res.json({
       success: true,
-      data: feedback
+      data: feedback,
     });
   } catch (error) {
-    console.error('Get feedback by ID error:', error);
+    console.error("Get feedback by ID error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching feedback'
+      message: "Server error while fetching feedback",
     });
   }
 };
@@ -125,13 +125,13 @@ const getFeedbackById = async (req, res) => {
 const updateFeedback = async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
-    
+
     const feedback = await Feedback.findById(req.params.id);
-    
+
     if (!feedback) {
       return res.status(404).json({
         success: false,
-        message: 'Feedback not found'
+        message: "Feedback not found",
       });
     }
 
@@ -144,13 +144,13 @@ const updateFeedback = async (req, res) => {
     res.json({
       success: true,
       data: updatedFeedback,
-      message: 'Feedback updated successfully'
+      message: "Feedback updated successfully",
     });
   } catch (error) {
-    console.error('Update feedback error:', error);
+    console.error("Update feedback error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while updating feedback'
+      message: "Server error while updating feedback",
     });
   }
 };
@@ -161,11 +161,11 @@ const updateFeedback = async (req, res) => {
 const deleteFeedback = async (req, res) => {
   try {
     const feedback = await Feedback.findById(req.params.id);
-    
+
     if (!feedback) {
       return res.status(404).json({
         success: false,
-        message: 'Feedback not found'
+        message: "Feedback not found",
       });
     }
 
@@ -173,13 +173,13 @@ const deleteFeedback = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Feedback deleted successfully'
+      message: "Feedback deleted successfully",
     });
   } catch (error) {
-    console.error('Delete feedback error:', error);
+    console.error("Delete feedback error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while deleting feedback'
+      message: "Server error while deleting feedback",
     });
   }
 };
@@ -190,5 +190,5 @@ module.exports = {
   getFeedbackById,
   updateFeedback,
   getFeedbackStats,
-  deleteFeedback
+  deleteFeedback,
 };

@@ -20,24 +20,24 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['buy', 'sell'],
-    required: true
+    enum: ["buy", "sell"],
+    required: true,
   },
   quantity: {
     type: Number,
-    required: true
+    required: true,
   },
   price: {
     type: Number,
-    required: true
+    required: true,
   },
   totalValue: {
     type: Number,
-    required: true
+    required: true,
   },
   fees: {
     type: Number,
-    default: 0
+    default: 0,
   },
   image: {
     type: String,
@@ -48,8 +48,8 @@ const transactionSchema = new mongoose.Schema({
   },
   purchaseId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'PurchasedCoin'
-  }
+    ref: "PurchasedCoin",
+  },
 });
 
 // Index for efficient queries

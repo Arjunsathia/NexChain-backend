@@ -7,35 +7,35 @@ const { executeBuy, executeSell } = require("../utils/transactionHelpers");
 exports.getUserPurchases = async (req, res) => {
   try {
     const userId = req.params.user_id;
-    const purchases = await PurchasedCoin.find({ 
-      user_id: userId 
+    const purchases = await PurchasedCoin.find({
+      user_id: userId,
     }).sort({ purchaseDate: -1 });
-    
-    res.status(200).json({ 
+
+    res.status(200).json({
       success: true,
-      purchases 
+      purchases,
     });
   } catch (error) {
     console.error("Error fetching user purchases:", error.message);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Server error" 
+      message: "Server error",
     });
   }
 };
 
 // POST /api/purchases/buy - Buy coins using virtual wallet
 exports.buyCoin = async (req, res) => {
-  const { 
-    user_id, 
-    coin_id, 
-    coin_name, 
-    coin_symbol, 
-    coin_price_usd, 
-    quantity, 
-    total_cost, 
-    fees, 
-    image 
+  const {
+    user_id,
+    coin_id,
+    coin_name,
+    coin_symbol,
+    coin_price_usd,
+    quantity,
+    total_cost,
+    fees,
+    image,
   } = req.body;
 
   try {
@@ -43,22 +43,24 @@ exports.buyCoin = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (user.isFrozen) {
-        return res.status(403).json({ error: "Account is frozen. Trading disabled." });
+      return res
+        .status(403)
+        .json({ error: "Account is frozen. Trading disabled." });
     }
 
     const result = await executeBuy(
-        user_id,
-        { coinId: coin_id, coinName: coin_name, coinSymbol: coin_symbol, image },
-        quantity,
-        coin_price_usd,
-        total_cost,
-        fees,
-        true // deductBalance
+      user_id,
+      { coinId: coin_id, coinName: coin_name, coinSymbol: coin_symbol, image },
+      quantity,
+      coin_price_usd,
+      total_cost,
+      fees,
+      true, // deductBalance
     );
 
-    res.status(201).json({ 
+    res.status(201).json({
       success: true,
-      message: "Purchase successful", 
+      message: "Purchase successful",
       purchase: {
         _id: result.purchasedCoin._id,
         coinId: result.purchasedCoin.coin_id,
@@ -70,35 +72,31 @@ exports.buyCoin = async (req, res) => {
         fees: result.purchasedCoin.fees,
         image: result.purchasedCoin.image,
         purchaseDate: result.purchasedCoin.purchaseDate,
-        userId: result.purchasedCoin.user_id
-        },
-      newBalance: result.newBalance 
+        userId: result.purchasedCoin.user_id,
+      },
+      newBalance: result.newBalance,
     });
-
   } catch (err) {
     console.error("Purchase Error", err);
-    res.status(err.message === "Insufficient balance" ? 400 : 500).json({ 
+    res.status(err.message === "Insufficient balance" ? 400 : 500).json({
       success: false,
-      error: err.message || "Unable to process purchase" 
+      error: err.message || "Unable to process purchase",
     });
   }
 };
 
 // POST /api/purchases/sell - Sell coins
 exports.sellCoin = async (req, res) => {
-  const { 
-    user_id, 
-    coin_id, 
-    quantity, 
-    current_price 
-  } = req.body;
+  const { user_id, coin_id, quantity, current_price } = req.body;
 
   try {
     const user = await User.findOne({ id: user_id });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (user.isFrozen) {
-        return res.status(403).json({ error: "Account is frozen. Trading disabled." });
+      return res
+        .status(403)
+        .json({ error: "Account is frozen. Trading disabled." });
     }
 
     const result = await executeSell(user_id, coin_id, quantity, current_price);
@@ -110,13 +108,13 @@ exports.sellCoin = async (req, res) => {
       saleAmount: result.saleAmount,
       quantitySold: quantity,
       deletedPurchases: result.deletedPurchases,
-      updatedPurchases: result.updatedPurchases
+      updatedPurchases: result.updatedPurchases,
     });
   } catch (error) {
-    console.error('Error processing sale:', error);
-    res.status(500).json({ 
+    console.error("Error processing sale:", error);
+    res.status(500).json({
       success: false,
-      error: error.message || 'Failed to process sale' 
+      error: error.message || "Failed to process sale",
     });
   }
 };
@@ -125,24 +123,24 @@ exports.sellCoin = async (req, res) => {
 exports.getUserBalance = async (req, res) => {
   try {
     const { user_id } = req.params;
-    const user = await User.findOne({ id: user_id }).select('virtualBalance');
-    
+    const user = await User.findOne({ id: user_id }).select("virtualBalance");
+
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: "User not found" 
+        error: "User not found",
       });
     }
 
-    res.json({ 
+    res.json({
       success: true,
-      virtualBalance: user.virtualBalance 
+      virtualBalance: user.virtualBalance,
     });
   } catch (err) {
     console.error("Balance fetch error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: "Unable to fetch balance" 
+      error: "Unable to fetch balance",
     });
   }
 };
@@ -152,27 +150,27 @@ exports.resetBalance = async (req, res) => {
   try {
     const { user_id } = req.body;
     const user = await User.findOne({ id: user_id });
-    
+
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: "User not found" 
+        error: "User not found",
       });
     }
 
     user.virtualBalance = 10000;
     await user.save();
 
-    res.json({ 
+    res.json({
       success: true,
-      message: "Balance reset successfully", 
-      newBalance: user.virtualBalance 
+      message: "Balance reset successfully",
+      newBalance: user.virtualBalance,
     });
   } catch (err) {
     console.error("Reset balance error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: "Unable to reset balance" 
+      error: "Unable to reset balance",
     });
   }
 };
@@ -181,12 +179,12 @@ exports.resetBalance = async (req, res) => {
 exports.getUserHoldings = async (req, res) => {
   try {
     const { user_id } = req.params;
-    
+
     const holdings = await PurchasedCoin.aggregate([
-      { 
-        $match: { 
-          user_id
-        } 
+      {
+        $match: {
+          user_id,
+        },
       },
       {
         $group: {
@@ -196,20 +194,20 @@ exports.getUserHoldings = async (req, res) => {
           totalQuantity: { $sum: "$quantity" },
           averagePrice: { $avg: "$coinPriceUSD" },
           image: { $first: "$image" },
-          totalInvested: { $sum: "$totalCost" }
-        }
-      }
+          totalInvested: { $sum: "$totalCost" },
+        },
+      },
     ]);
 
     res.json({
       success: true,
-      holdings
+      holdings,
     });
   } catch (error) {
     console.error("Error fetching holdings:", error);
     res.status(500).json({
       success: false,
-      error: "Unable to fetch holdings"
+      error: "Unable to fetch holdings",
     });
   }
 };
@@ -218,20 +216,21 @@ exports.getUserHoldings = async (req, res) => {
 exports.getUserTransactionHistory = async (req, res) => {
   try {
     const { user_id } = req.params;
-    
+
     // Get all transactions from Transaction collection
-    const transactions = await Transaction.find({ user_id })
-      .sort({ transactionDate: -1 });
+    const transactions = await Transaction.find({ user_id }).sort({
+      transactionDate: -1,
+    });
 
     res.json({
       success: true,
-      transactions
+      transactions,
     });
   } catch (error) {
     console.error("Error fetching transaction history:", error);
     res.status(500).json({
       success: false,
-      error: "Unable to fetch transaction history"
+      error: "Unable to fetch transaction history",
     });
   }
 };
@@ -244,20 +243,21 @@ exports.getPlatformStats = async (req, res) => {
 
     // 1. Total Trades Today
     const tradesToday = await Transaction.countDocuments({
-      transactionDate: { $gte: today }
+      transactionDate: { $gte: today },
     });
 
     // 2. Active Traders Today (Unique users who traded today)
-    const activeTraders = await Transaction.distinct('user_id', {
-      transactionDate: { $gte: today }
+    const activeTraders = await Transaction.distinct("user_id", {
+      transactionDate: { $gte: today },
     });
 
     // 3. Platform Total Volume Today
     const volumeResult = await Transaction.aggregate([
       { $match: { transactionDate: { $gte: today } } },
-      { $group: { _id: null, totalVolume: { $sum: "$totalValue" } } }
+      { $group: { _id: null, totalVolume: { $sum: "$totalValue" } } },
     ]);
-    const volumeToday = volumeResult.length > 0 ? volumeResult[0].totalVolume : 0;
+    const volumeToday =
+      volumeResult.length > 0 ? volumeResult[0].totalVolume : 0;
 
     // 4. Total Users Count (Overall)
     const totalUsers = await User.countDocuments({});
@@ -268,14 +268,14 @@ exports.getPlatformStats = async (req, res) => {
         tradesToday,
         activeTradersToday: activeTraders.length,
         volumeToday,
-        totalUsers
-      }
+        totalUsers,
+      },
     });
   } catch (error) {
     console.error("Error fetching platform stats:", error);
     res.status(500).json({
       success: false,
-      error: "Unable to fetch platform stats"
+      error: "Unable to fetch platform stats",
     });
   }
 };
@@ -287,27 +287,27 @@ exports.getTodayTransactions = async (req, res) => {
     today.setHours(0, 0, 0, 0);
 
     const transactions = await Transaction.aggregate([
-      { 
-        $match: { 
-          transactionDate: { $gte: today } 
-        } 
+      {
+        $match: {
+          transactionDate: { $gte: today },
+        },
       },
       {
         $lookup: {
           from: "users",
           localField: "user_id",
           foreignField: "id",
-          as: "userDetails"
-        }
+          as: "userDetails",
+        },
       },
-      { 
-        $unwind: { 
-          path: "$userDetails", 
-          preserveNullAndEmptyArrays: true 
-        } 
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
       },
-      { 
-        $sort: { transactionDate: -1 } 
+      {
+        $sort: { transactionDate: -1 },
       },
       {
         $project: {
@@ -323,20 +323,20 @@ exports.getTodayTransactions = async (req, res) => {
           user_id: 1,
           userName: { $ifNull: ["$userDetails.name", "Unknown User"] },
           userEmail: { $ifNull: ["$userDetails.email", "No Email"] },
-          userRole: { $ifNull: ["$userDetails.role", "user"] }
-        }
-      }
+          userRole: { $ifNull: ["$userDetails.role", "user"] },
+        },
+      },
     ]);
 
     res.json({
       success: true,
-      data: transactions
+      data: transactions,
     });
   } catch (error) {
     console.error("Error fetching today's transactions:", error);
     res.status(500).json({
       success: false,
-      error: "Unable to fetch transactions"
+      error: "Unable to fetch transactions",
     });
   }
 };

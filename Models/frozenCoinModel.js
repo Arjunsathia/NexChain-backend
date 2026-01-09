@@ -6,28 +6,28 @@ const frozenCoinSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true
+      trim: true,
     },
     symbol: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     frozenAt: {
       type: Date,
       default: Date.now,
     },
     frozenBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
-    }
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("FrozenCoin", frozenCoinSchema);

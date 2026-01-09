@@ -3,27 +3,35 @@ const router = express.Router();
 const {
   getUsers,
   getUserById,
-  updateUser, 
+  updateUser,
   updateProfileImage,
   deleteUser,
   logoutUser,
-  contactUser
+  contactUser,
 } = require("../Controllers/userController");
-const { protect, adminOnly, requireAdmin2FA } = require("../middleware/authMiddleware");
+const {
+  protect,
+  adminOnly,
+  requireAdmin2FA,
+} = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
 router.get("/", protect, adminOnly, getUsers);
 router.get("/:id", getUserById);
 
 // Update Profile Image
-router.put("/profile-image/:id", protect, upload.single("image"), updateProfileImage);
+router.put(
+  "/profile-image/:id",
+  protect,
+  upload.single("image"),
+  updateProfileImage,
+);
 
 // ✅ PUT ROUTE
 router.put("/:id", protect, updateUser);
 
 // ✅ DELETE ROUTE
 router.delete("/:id", protect, adminOnly, requireAdmin2FA, deleteUser);
-
 
 // ✅ CONTACT USER ROUTE
 router.post("/contact-user", protect, adminOnly, contactUser);
