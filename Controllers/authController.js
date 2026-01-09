@@ -164,11 +164,9 @@ const login = asyncHandler(async (req, res) => {
 
   // Check if user is frozen
   if (user.isFrozen) {
-    res
-      .status(403)
-      .json({
-        message: "Your account has been frozen. Please contact support.",
-      });
+    res.status(403).json({
+      message: "Your account has been frozen. Please contact support.",
+    });
     return;
   }
 

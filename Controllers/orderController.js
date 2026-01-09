@@ -63,11 +63,9 @@ exports.createOrder = async (req, res) => {
       );
 
       if (totalOwned - lockedQuantity < quantity) {
-        return res
-          .status(400)
-          .json({
-            error: "Insufficient available holdings (check open orders)",
-          });
+        return res.status(400).json({
+          error: "Insufficient available holdings (check open orders)",
+        });
       }
     }
 
@@ -86,13 +84,11 @@ exports.createOrder = async (req, res) => {
       status: "pending",
     });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        order: newOrder,
-        newBalance: user.virtualBalance,
-      });
+    res.status(201).json({
+      success: true,
+      order: newOrder,
+      newBalance: user.virtualBalance,
+    });
   } catch (error) {
     console.error("Create Order Error:", error);
     res.status(500).json({ error: "Failed to create order" });

@@ -1,6 +1,6 @@
 {
   "statistics": {
-    "detectionDate": "2026-01-09T04:32:50.449Z",
+    "detectionDate": "2026-01-09T06:14:24.126Z",
     "formats": {
       "javascript": {
         "sources": {
@@ -2744,11 +2744,11 @@
             "lines": 124,
             "tokens": 1220,
             "sources": 1,
-            "clones": 6,
-            "duplicatedLines": 368,
-            "duplicatedTokens": 3686,
-            "percentage": 296.77,
-            "percentageTokens": 302.13,
+            "clones": 5,
+            "duplicatedLines": 420,
+            "duplicatedTokens": 4263,
+            "percentage": 338.71,
+            "percentageTokens": 349.43,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -2768,11 +2768,11 @@
             "lines": 82,
             "tokens": 873,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 48,
-            "duplicatedTokens": 476,
-            "percentage": 58.54,
-            "percentageTokens": 54.52,
+            "clones": 1,
+            "duplicatedLines": 8,
+            "duplicatedTokens": 77,
+            "percentage": 9.76,
+            "percentageTokens": 8.82,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -13444,15 +13444,15 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "node_modules/http-errors/node_modules/statuses/index.js": {
-            "lines": 145,
-            "tokens": 622,
+          "node_modules/iconv-lite/lib/helpers/merge-exports.js": {
+            "lines": 12,
+            "tokens": 112,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 145,
-            "duplicatedTokens": 622,
-            "percentage": 100,
-            "percentageTokens": 100,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -38213,50 +38213,50 @@
             "newClones": 0
           },
           "node_modules/body-parser/lib/types/urlencoded.js": {
-            "lines": 176,
-            "tokens": 1115,
+            "lines": 141,
+            "tokens": 886,
             "sources": 1,
-            "clones": 4,
-            "duplicatedLines": 107,
-            "duplicatedTokens": 582,
-            "percentage": 60.8,
-            "percentageTokens": 52.2,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "node_modules/body-parser/lib/types/text.js": {
-            "lines": 79,
-            "tokens": 399,
+            "lines": 35,
+            "tokens": 136,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 37,
-            "duplicatedTokens": 222,
-            "percentage": 46.84,
-            "percentageTokens": 55.64,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "node_modules/body-parser/lib/types/raw.js": {
-            "lines": 74,
-            "tokens": 359,
+            "lines": 41,
+            "tokens": 163,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 27,
-            "duplicatedTokens": 157,
-            "percentage": 36.49,
-            "percentageTokens": 43.73,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "node_modules/body-parser/lib/types/json.js": {
-            "lines": 205,
-            "tokens": 1134,
+            "lines": 157,
+            "tokens": 827,
             "sources": 1,
-            "clones": 3,
-            "duplicatedLines": 63,
-            "duplicatedTokens": 333,
-            "percentage": 30.73,
-            "percentageTokens": 29.37,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -40241,8 +40241,8 @@
             "newClones": 0
           },
           "node_modules/qs/test/utils.js": {
-            "lines": 261,
-            "tokens": 2790,
+            "lines": 380,
+            "tokens": 4393,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -40265,8 +40265,8 @@
             "newClones": 0
           },
           "node_modules/qs/lib/utils.js": {
-            "lines": 267,
-            "tokens": 2740,
+            "lines": 319,
+            "tokens": 3263,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -40289,14 +40289,14 @@
             "newClones": 0
           },
           "node_modules/qs/lib/parse.js": {
-            "lines": 327,
-            "tokens": 3692,
+            "lines": 359,
+            "tokens": 3900,
             "sources": 1,
             "clones": 1,
             "duplicatedLines": 9,
             "duplicatedTokens": 78,
-            "percentage": 2.75,
-            "percentageTokens": 2.11,
+            "percentage": 2.51,
+            "percentageTokens": 2,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -40326,7 +40326,7 @@
           },
           "node_modules/qs/dist/qs.js": {
             "lines": 140,
-            "tokens": 16182,
+            "tokens": 16584,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -46685,14 +46685,14 @@
             "newClones": 0
           },
           "node_modules/jws/lib/verify-stream.js": {
-            "lines": 119,
-            "tokens": 1143,
+            "lines": 124,
+            "tokens": 1220,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 118,
-            "duplicatedTokens": 1132,
-            "percentage": 99.16,
-            "percentageTokens": 99.04,
+            "clones": 1,
+            "duplicatedLines": 124,
+            "duplicatedTokens": 1220,
+            "percentage": 100,
+            "percentageTokens": 100,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -46709,14 +46709,14 @@
             "newClones": 0
           },
           "node_modules/jws/lib/sign-stream.js": {
-            "lines": 77,
-            "tokens": 794,
+            "lines": 82,
+            "tokens": 873,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 76,
-            "duplicatedTokens": 783,
-            "percentage": 98.7,
-            "percentageTokens": 98.61,
+            "clones": 1,
+            "duplicatedLines": 82,
+            "duplicatedTokens": 873,
+            "percentage": 100,
+            "percentageTokens": 100,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -47093,20 +47093,20 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/lib/streams.js": {
-            "lines": 108,
-            "tokens": 953,
+            "lines": 104,
+            "tokens": 921,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 18,
-            "duplicatedTokens": 134,
-            "percentage": 16.67,
-            "percentageTokens": 14.06,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "node_modules/iconv-lite/lib/index.js": {
-            "lines": 179,
-            "tokens": 1394,
+            "lines": 181,
+            "tokens": 1510,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -47117,8 +47117,8 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/lib/bom-handling.js": {
-            "lines": 50,
-            "tokens": 375,
+            "lines": 47,
+            "tokens": 367,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -47129,44 +47129,44 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/utf7.js": {
-            "lines": 287,
-            "tokens": 2634,
+            "lines": 282,
+            "tokens": 2589,
             "sources": 1,
-            "clones": 8,
-            "duplicatedLines": 82,
-            "duplicatedTokens": 796,
-            "percentage": 28.57,
-            "percentageTokens": 30.22,
+            "clones": 6,
+            "duplicatedLines": 68,
+            "duplicatedTokens": 646,
+            "percentage": 24.11,
+            "percentageTokens": 24.95,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/utf32.js": {
-            "lines": 318,
-            "tokens": 3012,
+            "lines": 306,
+            "tokens": 2958,
             "sources": 1,
-            "clones": 7,
-            "duplicatedLines": 71,
-            "duplicatedTokens": 802,
-            "percentage": 22.33,
-            "percentageTokens": 26.63,
+            "clones": 6,
+            "duplicatedLines": 60,
+            "duplicatedTokens": 755,
+            "percentage": 19.61,
+            "percentageTokens": 25.52,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/utf16.js": {
-            "lines": 194,
-            "tokens": 1653,
+            "lines": 186,
+            "tokens": 1634,
             "sources": 1,
-            "clones": 5,
-            "duplicatedLines": 57,
-            "duplicatedTokens": 594,
-            "percentage": 29.38,
-            "percentageTokens": 35.93,
+            "clones": 4,
+            "duplicatedLines": 48,
+            "duplicatedTokens": 549,
+            "percentage": 25.81,
+            "percentageTokens": 33.6,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/sbcs-data.js": {
             "lines": 177,
-            "tokens": 1029,
+            "tokens": 1021,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -47189,8 +47189,8 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/sbcs-codec.js": {
-            "lines": 71,
-            "tokens": 682,
+            "lines": 74,
+            "tokens": 699,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -47201,8 +47201,8 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/internal.js": {
-            "lines": 197,
-            "tokens": 1728,
+            "lines": 217,
+            "tokens": 1972,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -47214,7 +47214,7 @@
           },
           "node_modules/iconv-lite/encodings/index.js": {
             "lines": 22,
-            "tokens": 171,
+            "tokens": 142,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -47225,8 +47225,8 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/dbcs-data.js": {
-            "lines": 187,
-            "tokens": 1175,
+            "lines": 184,
+            "tokens": 1176,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -47237,8 +47237,8 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/encodings/dbcs-codec.js": {
-            "lines": 595,
-            "tokens": 6043,
+            "lines": 531,
+            "tokens": 6000,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -60605,8 +60605,8 @@
             "newClones": 0
           },
           "node_modules/body-parser/lib/utils.js": {
-            "lines": 82,
-            "tokens": 393,
+            "lines": 97,
+            "tokens": 434,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -60617,8 +60617,8 @@
             "newClones": 0
           },
           "node_modules/body-parser/lib/read.js": {
-            "lines": 209,
-            "tokens": 1189,
+            "lines": 246,
+            "tokens": 1461,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -61388,11 +61388,11 @@
             "lines": 145,
             "tokens": 622,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 145,
-            "duplicatedTokens": 622,
-            "percentage": 100,
-            "percentageTokens": 100,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -61771,6 +61771,18 @@
           "node_modules/range-parser/index.js": {
             "lines": 161,
             "tokens": 892,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "node_modules/qs/eslint.config.mjs": {
+            "lines": 55,
+            "tokens": 312,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -70361,14 +70373,14 @@
             "newClones": 0
           },
           "node_modules/http-errors/index.js": {
-            "lines": 288,
-            "tokens": 1786,
+            "lines": 289,
+            "tokens": 1784,
             "sources": 1,
             "clones": 2,
             "duplicatedLines": 42,
             "duplicatedTokens": 226,
-            "percentage": 14.58,
-            "percentageTokens": 12.65,
+            "percentage": 14.53,
+            "percentageTokens": 12.67,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -71621,8 +71633,8 @@
             "newClones": 0
           },
           "node_modules/body-parser/index.js": {
-            "lines": 79,
-            "tokens": 235,
+            "lines": 70,
+            "tokens": 229,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -72161,14 +72173,14 @@
             "newClones": 0
           },
           "Controllers/userController.js": {
-            "lines": 419,
-            "tokens": 3563,
+            "lines": 416,
+            "tokens": 3558,
             "sources": 1,
             "clones": 6,
             "duplicatedLines": 64,
             "duplicatedTokens": 506,
-            "percentage": 15.27,
-            "percentageTokens": 14.2,
+            "percentage": 15.38,
+            "percentageTokens": 14.22,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -72185,14 +72197,14 @@
             "newClones": 0
           },
           "Controllers/orderController.js": {
-            "lines": 234,
-            "tokens": 2050,
+            "lines": 230,
+            "tokens": 2042,
             "sources": 1,
             "clones": 1,
             "duplicatedLines": 7,
             "duplicatedTokens": 74,
-            "percentage": 2.99,
-            "percentageTokens": 3.61,
+            "percentage": 3.04,
+            "percentageTokens": 3.62,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -72245,14 +72257,14 @@
             "newClones": 0
           },
           "Controllers/authController.js": {
-            "lines": 504,
-            "tokens": 4052,
+            "lines": 502,
+            "tokens": 4048,
             "sources": 1,
             "clones": 6,
             "duplicatedLines": 92,
             "duplicatedTokens": 820,
-            "percentage": 18.25,
-            "percentageTokens": 20.24,
+            "percentage": 18.33,
+            "percentageTokens": 20.26,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -72306,14 +72318,14 @@
           }
         },
         "total": {
-          "lines": 357767,
-          "tokens": 2855884,
-          "sources": 6025,
-          "clones": 1514,
-          "duplicatedLines": 34732,
-          "duplicatedTokens": 302207,
-          "percentage": 9.71,
-          "percentageTokens": 10.58,
+          "lines": 357703,
+          "tokens": 2858011,
+          "sources": 6026,
+          "clones": 1503,
+          "duplicatedLines": 34456,
+          "duplicatedTokens": 300928,
+          "percentage": 9.63,
+          "percentageTokens": 10.53,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -77768,9 +77780,21 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "node_modules/iconv-lite/types/encodings.d.ts": {
+            "lines": 422,
+            "tokens": 2083,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "node_modules/iconv-lite/lib/index.d.ts": {
-            "lines": 40,
-            "tokens": 312,
+            "lines": 128,
+            "tokens": 761,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -79042,14 +79066,14 @@
           }
         },
         "total": {
-          "lines": 69896,
-          "tokens": 474974,
-          "sources": 560,
+          "lines": 70406,
+          "tokens": 477506,
+          "sources": 561,
           "clones": 182,
           "duplicatedLines": 7940,
           "duplicatedTokens": 53202,
-          "percentage": 11.36,
-          "percentageTokens": 11.2,
+          "percentage": 11.28,
+          "percentageTokens": 11.14,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -79365,30 +79389,6 @@
             "duplicatedTokens": 0,
             "percentage": 0,
             "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/http-errors/node_modules/statuses/package.json": {
-            "lines": 48,
-            "tokens": 273,
-            "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 35,
-            "duplicatedTokens": 181,
-            "percentage": 72.92,
-            "percentageTokens": 66.3,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/http-errors/node_modules/statuses/codes.json": {
-            "lines": 64,
-            "tokens": 442,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 64,
-            "duplicatedTokens": 442,
-            "percentage": 100,
-            "percentageTokens": 100,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -80860,11 +80860,11 @@
             "lines": 48,
             "tokens": 273,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 35,
-            "duplicatedTokens": 181,
-            "percentage": 72.92,
-            "percentageTokens": 66.3,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -80872,11 +80872,11 @@
             "lines": 64,
             "tokens": 442,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 64,
-            "duplicatedTokens": 442,
-            "percentage": 100,
-            "percentageTokens": 100,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -81241,8 +81241,8 @@
             "newClones": 0
           },
           "node_modules/raw-body/package.json": {
-            "lines": 49,
-            "tokens": 283,
+            "lines": 45,
+            "tokens": 262,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -81265,8 +81265,8 @@
             "newClones": 0
           },
           "node_modules/qs/package.json": {
-            "lines": 92,
-            "tokens": 544,
+            "lines": 93,
+            "tokens": 551,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -82405,8 +82405,8 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/package.json": {
-            "lines": 43,
-            "tokens": 248,
+            "lines": 69,
+            "tokens": 412,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -82429,8 +82429,8 @@
             "newClones": 0
           },
           "node_modules/http-errors/package.json": {
-            "lines": 49,
-            "tokens": 278,
+            "lines": 53,
+            "tokens": 301,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -83665,8 +83665,8 @@
             "newClones": 0
           },
           "node_modules/body-parser/package.json": {
-            "lines": 48,
-            "tokens": 282,
+            "lines": 51,
+            "tokens": 301,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -83892,6 +83892,30 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "diagnostics_20260109_113000/npm_audit_fix.json": {
+            "lines": 83,
+            "tokens": 2276,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "diagnostics_20260109_100000/npm_audit.json": {
+            "lines": 163,
+            "tokens": 4306,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 10,
+            "duplicatedTokens": 274,
+            "percentage": 6.13,
+            "percentageTokens": 6.36,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "package.json": {
             "lines": 39,
             "tokens": 253,
@@ -83918,14 +83942,14 @@
           }
         },
         "total": {
-          "lines": 23523,
-          "tokens": 143084,
+          "lines": 23687,
+          "tokens": 149143,
           "sources": 405,
-          "clones": 114,
-          "duplicatedLines": 2450,
-          "duplicatedTokens": 13551,
-          "percentage": 10.42,
-          "percentageTokens": 9.47,
+          "clones": 112,
+          "duplicatedLines": 2356,
+          "duplicatedTokens": 13065,
+          "percentage": 9.95,
+          "percentageTokens": 8.76,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -84232,30 +84256,6 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "node_modules/http-errors/node_modules/statuses/README.md": {
-            "lines": 123,
-            "tokens": 637,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 117,
-            "duplicatedTokens": 611,
-            "percentage": 95.12,
-            "percentageTokens": 95.92,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/http-errors/node_modules/statuses/HISTORY.md": {
-            "lines": 65,
-            "tokens": 314,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 65,
-            "duplicatedTokens": 314,
-            "percentage": 100,
-            "percentageTokens": 100,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
           "node_modules/gtoken/node_modules/jws/readme.md": {
             "lines": 249,
             "tokens": 1896,
@@ -84272,11 +84272,11 @@
             "lines": 47,
             "tokens": 500,
             "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 67,
-            "duplicatedTokens": 798,
-            "percentage": 142.55,
-            "percentageTokens": 159.6,
+            "clones": 3,
+            "duplicatedLines": 88,
+            "duplicatedTokens": 977,
+            "percentage": 187.23,
+            "percentageTokens": 195.4,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -84637,6 +84637,30 @@
             "duplicatedTokens": 333,
             "percentage": 100,
             "percentageTokens": 100,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "node_modules/qs/.github/THREAT_MODEL.md": {
+            "lines": 73,
+            "tokens": 1078,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "node_modules/qs/.github/SECURITY.md": {
+            "lines": 8,
+            "tokens": 75,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -85628,11 +85652,11 @@
             "lines": 124,
             "tokens": 642,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 117,
-            "duplicatedTokens": 611,
-            "percentage": 94.35,
-            "percentageTokens": 95.17,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -85640,11 +85664,11 @@
             "lines": 69,
             "tokens": 326,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 65,
-            "duplicatedTokens": 314,
-            "percentage": 94.2,
-            "percentageTokens": 96.32,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -86152,33 +86176,9 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
-          "node_modules/raw-body/SECURITY.md": {
-            "lines": 19,
-            "tokens": 349,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 10,
-            "duplicatedTokens": 198,
-            "percentage": 52.63,
-            "percentageTokens": 56.73,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
           "node_modules/raw-body/README.md": {
             "lines": 209,
             "tokens": 1514,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/raw-body/HISTORY.md": {
-            "lines": 272,
-            "tokens": 1068,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -86237,14 +86237,14 @@
             "newClones": 0
           },
           "node_modules/qs/CHANGELOG.md": {
-            "lines": 620,
-            "tokens": 8850,
+            "lines": 629,
+            "tokens": 8976,
             "sources": 1,
             "clones": 16,
             "duplicatedLines": 118,
             "duplicatedTokens": 1860,
-            "percentage": 19.03,
-            "percentageTokens": 21.02,
+            "percentage": 18.76,
+            "percentageTokens": 20.72,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -87401,14 +87401,14 @@
             "newClones": 0
           },
           "node_modules/jws/CHANGELOG.md": {
-            "lines": 24,
-            "tokens": 325,
+            "lines": 38,
+            "tokens": 415,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 20,
-            "duplicatedTokens": 298,
-            "percentage": 83.33,
-            "percentageTokens": 91.69,
+            "clones": 2,
+            "duplicatedLines": 41,
+            "duplicatedTokens": 477,
+            "percentage": 107.89,
+            "percentageTokens": 114.94,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -87701,20 +87701,8 @@
             "newClones": 0
           },
           "node_modules/iconv-lite/README.md": {
-            "lines": 127,
-            "tokens": 1202,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/iconv-lite/Changelog.md": {
-            "lines": 208,
-            "tokens": 1788,
+            "lines": 126,
+            "tokens": 1161,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -87749,8 +87737,8 @@
             "newClones": 0
           },
           "node_modules/http-errors/HISTORY.md": {
-            "lines": 149,
-            "tokens": 799,
+            "lines": 154,
+            "tokens": 830,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -88916,11 +88904,11 @@
             "lines": 20,
             "tokens": 351,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 10,
-            "duplicatedTokens": 198,
-            "percentage": 50,
-            "percentageTokens": 56.41,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -89333,26 +89321,14 @@
             "newClones": 0
           },
           "node_modules/body-parser/README.md": {
-            "lines": 476,
-            "tokens": 5234,
+            "lines": 481,
+            "tokens": 5293,
             "sources": 1,
             "clones": 14,
             "duplicatedLines": 170,
-            "duplicatedTokens": 1776,
-            "percentage": 35.71,
-            "percentageTokens": 33.93,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/body-parser/HISTORY.md": {
-            "lines": 651,
-            "tokens": 2836,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
+            "duplicatedTokens": 1790,
+            "percentage": 35.34,
+            "percentageTokens": 33.82,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -89655,17 +89631,29 @@
             "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
+          },
+          "diagnostics_20260109_100000/madge_circular.txt": {
+            "lines": 11,
+            "tokens": 152,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
           }
         },
         "total": {
-          "lines": 66664,
-          "tokens": 559316,
-          "sources": 477,
-          "clones": 217,
-          "duplicatedLines": 6953,
-          "duplicatedTokens": 64369,
-          "percentage": 10.43,
-          "percentageTokens": 11.51,
+          "lines": 65450,
+          "tokens": 553894,
+          "sources": 474,
+          "clones": 215,
+          "duplicatedLines": 6782,
+          "duplicatedTokens": 63432,
+          "percentage": 10.36,
+          "percentageTokens": 11.45,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -89729,18 +89717,6 @@
             "duplicatedTokens": 0,
             "percentage": 0,
             "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/http-errors/node_modules/statuses/README.md": {
-            "lines": 8,
-            "tokens": 52,
-            "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 8,
-            "duplicatedTokens": 52,
-            "percentage": 100,
-            "percentageTokens": 100,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -90000,11 +89976,11 @@
             "lines": 10,
             "tokens": 64,
             "sources": 1,
-            "clones": 1,
-            "duplicatedLines": 8,
-            "duplicatedTokens": 52,
-            "percentage": 80,
-            "percentageTokens": 81.25,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -90441,8 +90417,8 @@
             "newClones": 0
           },
           "node_modules/jws/CHANGELOG.md": {
-            "lines": 6,
-            "tokens": 30,
+            "lines": 4,
+            "tokens": 28,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -90467,6 +90443,18 @@
           "node_modules/ip-address/README.md": {
             "lines": 3,
             "tokens": 22,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "node_modules/iconv-lite/README.md": {
+            "lines": 7,
+            "tokens": 46,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -90969,8 +90957,8 @@
             "newClones": 0
           },
           "node_modules/body-parser/README.md": {
-            "lines": 10,
-            "tokens": 64,
+            "lines": 8,
+            "tokens": 52,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -91042,14 +91030,14 @@
           }
         },
         "total": {
-          "lines": 2762,
-          "tokens": 19563,
+          "lines": 2757,
+          "tokens": 19543,
           "sources": 114,
-          "clones": 4,
-          "duplicatedLines": 259,
-          "duplicatedTokens": 1872,
-          "percentage": 9.38,
-          "percentageTokens": 9.57,
+          "clones": 3,
+          "duplicatedLines": 251,
+          "duplicatedTokens": 1820,
+          "percentage": 9.1,
+          "percentageTokens": 9.31,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -91287,18 +91275,6 @@
           "node_modules/json-schema-traverse/spec/.eslintrc.yml": {
             "lines": 5,
             "tokens": 28,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/iconv-lite/.github/dependabot.yml": {
-            "lines": 10,
-            "tokens": 47,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -91658,14 +91634,14 @@
           }
         },
         "total": {
-          "lines": 879,
-          "tokens": 6124,
-          "sources": 50,
+          "lines": 869,
+          "tokens": 6077,
+          "sources": 49,
           "clones": 3,
           "duplicatedLines": 47,
           "duplicatedTokens": 405,
-          "percentage": 5.35,
-          "percentageTokens": 6.61,
+          "percentage": 5.41,
+          "percentageTokens": 6.66,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -91947,77 +91923,17 @@
             "percentageTokens": 83.33,
             "newDuplicatedLines": 0,
             "newClones": 0
-          },
-          "node_modules/iconv-lite/.idea/inspectionProfiles/Project_Default.xml": {
-            "lines": 5,
-            "tokens": 76,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/iconv-lite/.idea/codeStyles/Project.xml": {
-            "lines": 46,
-            "tokens": 584,
-            "sources": 1,
-            "clones": 2,
-            "duplicatedLines": 14,
-            "duplicatedTokens": 236,
-            "percentage": 30.43,
-            "percentageTokens": 40.41,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/iconv-lite/.idea/codeStyles/codeStyleConfig.xml": {
-            "lines": 4,
-            "tokens": 40,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/iconv-lite/.idea/vcs.xml": {
-            "lines": 5,
-            "tokens": 48,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "node_modules/iconv-lite/.idea/modules.xml": {
-            "lines": 7,
-            "tokens": 58,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
           }
         },
         "total": {
-          "lines": 9684,
-          "tokens": 151415,
-          "sources": 28,
-          "clones": 333,
-          "duplicatedLines": 5657,
-          "duplicatedTokens": 101951,
-          "percentage": 58.42,
-          "percentageTokens": 67.33,
+          "lines": 9617,
+          "tokens": 150609,
+          "sources": 23,
+          "clones": 332,
+          "duplicatedLines": 5650,
+          "duplicatedTokens": 101833,
+          "percentage": 58.75,
+          "percentageTokens": 67.61,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
@@ -92448,14 +92364,14 @@
       }
     },
     "total": {
-      "lines": 534010,
-      "tokens": 4238533,
-      "sources": 7685,
-      "clones": 2399,
-      "duplicatedLines": 58437,
-      "duplicatedTokens": 545501,
-      "percentage": 10.94,
-      "percentageTokens": 12.87,
+      "lines": 533324,
+      "tokens": 4242956,
+      "sources": 7678,
+      "clones": 2382,
+      "duplicatedLines": 57881,
+      "duplicatedTokens": 542629,
+      "percentage": 10.85,
+      "percentageTokens": 12.79,
       "newDuplicatedLines": 0,
       "newClones": 0
     }
@@ -123530,42 +123446,6 @@
       }
     },
     {
-      "format": "markup",
-      "lines": 8,
-      "fragment": " version=\"0\">\n      <option name=\"FORCE_SEMICOLON_STYLE\" value=\"true\" />\n      <option name=\"SPACE_BEFORE_FUNCTION_LEFT_PARENTH\" value=\"false\" />\n      <option name=\"FORCE_QUOTE_STYlE\" value=\"true\" />\n      <option name=\"ENFORCE_TRAILING_COMMA\" value=\"Remove\" />\n      <option name=\"SPACES_WITHIN_OBJECT_LITERAL_BRACES\" value=\"true\" />\n      <option name=\"SPACES_WITHIN_IMPORTS\" value=\"true\" />\n    </TypeScriptCodeStyleSettings",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\iconv-lite\\.idea\\codeStyles\\Project.xml",
-        "start": 15,
-        "end": 22,
-        "startLoc": {
-          "line": 15,
-          "column": 28,
-          "position": 200
-        },
-        "endLoc": {
-          "line": 22,
-          "column": 28,
-          "position": 318
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\iconv-lite\\.idea\\codeStyles\\Project.xml",
-        "start": 7,
-        "end": 14,
-        "startLoc": {
-          "line": 7,
-          "column": 20,
-          "position": 76
-        },
-        "endLoc": {
-          "line": 14,
-          "column": 20,
-          "position": 194
-        }
-      }
-    },
-    {
       "format": "javascript",
       "lines": 20,
       "fragment": "'use strict';\n\nvar test = require('tape');\n\nif (typeof Symbol === 'function' && typeof Symbol() === 'symbol') {\n\ttest('has native Symbol support', function (t) {\n\t\tt.equal(typeof Symbol, 'function');\n\t\tt.equal(typeof Symbol(), 'symbol');\n\t\tt.end();\n\t});\n\t// @ts-expect-error TS is stupid and doesn't know about top level return\n\treturn;\n}\n\nvar hasSymbols = require('../../shams');\n\ntest('polyfilled Symbols', function (t) {\n\t/* eslint-disable global-require */\n\tt.equal(hasSymbols(), false, 'hasSymbols is false before polyfilling');\n\trequire('core-js/fn/symbol'",
@@ -136958,186 +136838,6 @@
       }
     },
     {
-      "format": "javascript",
-      "lines": 28,
-      "fragment": "(req, res, next) {\n    if (isFinished(req)) {\n      debug('body already parsed')\n      next()\n      return\n    }\n\n    if (!('body' in req)) {\n      req.body = undefined\n    }\n\n    // skip requests without bodies\n    if (!typeis.hasBody(req)) {\n      debug('skip empty body')\n      next()\n      return\n    }\n\n    debug('content-type %j', req.headers['content-type'])\n\n    // determine if request should be parsed\n    if (!shouldParse(req)) {\n      debug('skip parsing')\n      next()\n      return\n    }\n\n    // get charset",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\text.js",
-        "start": 42,
-        "end": 69,
-        "startLoc": {
-          "line": 42,
-          "column": 2,
-          "position": 175
-        },
-        "endLoc": {
-          "line": 69,
-          "column": 15,
-          "position": 332
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\urlencoded.js",
-        "start": 54,
-        "end": 81,
-        "startLoc": {
-          "line": 54,
-          "column": 2,
-          "position": 269
-        },
-        "endLoc": {
-          "line": 81,
-          "column": 18,
-          "position": 426
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 28,
-      "fragment": "(req, res, next) {\n    if (isFinished(req)) {\n      debug('body already parsed')\n      next()\n      return\n    }\n\n    if (!('body' in req)) {\n      req.body = undefined\n    }\n\n    // skip requests without bodies\n    if (!typeis.hasBody(req)) {\n      debug('skip empty body')\n      next()\n      return\n    }\n\n    debug('content-type %j', req.headers['content-type'])\n\n    // determine if request should be parsed\n    if (!shouldParse(req)) {\n      debug('skip parsing')\n      next()\n      return\n    }\n\n    // read",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\raw.js",
-        "start": 40,
-        "end": 67,
-        "startLoc": {
-          "line": 40,
-          "column": 2,
-          "position": 155
-        },
-        "endLoc": {
-          "line": 67,
-          "column": 8,
-          "position": 312
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\urlencoded.js",
-        "start": 54,
-        "end": 81,
-        "startLoc": {
-          "line": 54,
-          "column": 2,
-          "position": 269
-        },
-        "endLoc": {
-          "line": 81,
-          "column": 18,
-          "position": 426
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 11,
-      "fragment": ")\nvar isFinished = require('on-finished').isFinished\nvar read = require('../read')\nvar typeis = require('type-is')\nvar { getCharset, normalizeOptions } = require('../utils')\n\n/**\n * Module exports.\n */\n\nmodule.exports = json",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\json.js",
-        "start": 16,
-        "end": 26,
-        "startLoc": {
-          "line": 16,
-          "column": 19,
-          "position": 32
-        },
-        "endLoc": {
-          "line": 26,
-          "column": 5,
-          "position": 97
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\text.js",
-        "start": 13,
-        "end": 23,
-        "startLoc": {
-          "line": 13,
-          "column": 19,
-          "position": 21
-        },
-        "endLoc": {
-          "line": 23,
-          "column": 5,
-          "position": 86
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 28,
-      "fragment": "(req, res, next) {\n    if (isFinished(req)) {\n      debug('body already parsed')\n      next()\n      return\n    }\n\n    if (!('body' in req)) {\n      req.body = undefined\n    }\n\n    // skip requests without bodies\n    if (!typeis.hasBody(req)) {\n      debug('skip empty body')\n      next()\n      return\n    }\n\n    debug('content-type %j', req.headers['content-type'])\n\n    // determine if request should be parsed\n    if (!shouldParse(req)) {\n      debug('skip parsing')\n      next()\n      return\n    }\n\n    // assert charset per RFC 7159 sec 8.1",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\json.js",
-        "start": 86,
-        "end": 113,
-        "startLoc": {
-          "line": 86,
-          "column": 2,
-          "position": 403
-        },
-        "endLoc": {
-          "line": 113,
-          "column": 39,
-          "position": 560
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\urlencoded.js",
-        "start": 54,
-        "end": 81,
-        "startLoc": {
-          "line": 54,
-          "column": 2,
-          "position": 269
-        },
-        "endLoc": {
-          "line": 81,
-          "column": 18,
-          "position": 426
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 27,
-      "fragment": ") {\n      debug('invalid charset')\n      next(createError(415, 'unsupported charset \"' + charset.toUpperCase() + '\"', {\n        charset: charset,\n        type: 'charset.unsupported'\n      }))\n      return\n    }\n\n    // read\n    read(req, res, next, parse, debug, {\n      encoding: charset,\n      inflate,\n      limit,\n      verify\n    })\n  }\n}\n\n/**\n * Create strict violation syntax error matching native error.\n *\n * @param {string} str\n * @param {string} char\n * @return {Error}\n * @private\n */",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\json.js",
-        "start": 115,
-        "end": 141,
-        "startLoc": {
-          "line": 115,
-          "column": 7,
-          "position": 595
-        },
-        "endLoc": {
-          "line": 141,
-          "column": 4,
-          "position": 706
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\body-parser\\lib\\types\\urlencoded.js",
-        "start": 83,
-        "end": 106,
-        "startLoc": {
-          "line": 83,
-          "column": 13,
-          "position": 461
-        },
-        "endLoc": {
-          "line": 106,
-          "column": 4,
-          "position": 572
-        }
-      }
-    },
-    {
       "format": "json",
       "lines": 9,
       "fragment": "},\n        \"if\": {\"$ref\": \"#\"},\n        \"then\": {\"$ref\": \"#\"},\n        \"else\": {\"$ref\": \"#\"},\n        \"allOf\": { \"$ref\": \"#/definitions/schemaArray\" },\n        \"anyOf\": { \"$ref\": \"#/definitions/schemaArray\" },\n        \"oneOf\": { \"$ref\": \"#/definitions/schemaArray\" },\n        \"not\": { \"$ref\": \"#\" }\n    }",
@@ -144344,17 +144044,17 @@
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\lib\\parse.js",
-        "start": 243,
-        "end": 252,
+        "start": 275,
+        "end": 284,
         "startLoc": {
-          "line": 243,
+          "line": 275,
           "column": 22,
-          "position": 2455
+          "position": 2663
         },
         "endLoc": {
-          "line": 252,
+          "line": 284,
           "column": 16,
-          "position": 2533
+          "position": 2741
         }
       },
       "secondFile": {
@@ -148551,68 +148251,32 @@
     },
     {
       "format": "javascript",
-      "lines": 82,
-      "fragment": "/*global module*/\nvar Buffer = require('safe-buffer').Buffer;\nvar DataStream = require('./data-stream');\nvar jwa = require('jwa');\nvar Stream = require('stream');\nvar toString = require('./tostring');\nvar util = require('util');\nvar JWS_REGEX = /^[a-zA-Z0-9\\-_]+?\\.[a-zA-Z0-9\\-_]+?\\.([a-zA-Z0-9\\-_]+)?$/;\n\nfunction isObject(thing) {\n  return Object.prototype.toString.call(thing) === '[object Object]';\n}\n\nfunction safeJsonParse(thing) {\n  if (isObject(thing))\n    return thing;\n  try { return JSON.parse(thing); }\n  catch (e) { return undefined; }\n}\n\nfunction headerFromJWS(jwsSig) {\n  var encodedHeader = jwsSig.split('.', 1)[0];\n  return safeJsonParse(Buffer.from(encodedHeader, 'base64').toString('binary'));\n}\n\nfunction securedInputFromJWS(jwsSig) {\n  return jwsSig.split('.', 2).join('.');\n}\n\nfunction signatureFromJWS(jwsSig) {\n  return jwsSig.split('.')[2];\n}\n\nfunction payloadFromJWS(jwsSig, encoding) {\n  encoding = encoding || 'utf8';\n  var payload = jwsSig.split('.')[1];\n  return Buffer.from(payload, 'base64').toString(encoding);\n}\n\nfunction isValidJws(string) {\n  return JWS_REGEX.test(string) && !!headerFromJWS(string);\n}\n\nfunction jwsVerify(jwsSig, algorithm, secretOrKey) {\n  if (!algorithm) {\n    var err = new Error(\"Missing algorithm parameter for jws.verify\");\n    err.code = \"MISSING_ALGORITHM\";\n    throw err;\n  }\n  jwsSig = toString(jwsSig);\n  var signature = signatureFromJWS(jwsSig);\n  var securedInput = securedInputFromJWS(jwsSig);\n  var algo = jwa(algorithm);\n  return algo.verify(securedInput, signature, secretOrKey);\n}\n\nfunction jwsDecode(jwsSig, opts) {\n  opts = opts || {};\n  jwsSig = toString(jwsSig);\n\n  if (!isValidJws(jwsSig))\n    return null;\n\n  var header = headerFromJWS(jwsSig);\n\n  if (!header)\n    return null;\n\n  var payload = payloadFromJWS(jwsSig);\n  if (header.typ === 'JWT' || opts.json)\n    payload = JSON.parse(payload, opts.encoding);\n\n  return {\n    header: header,\n    payload: payload,\n    signature: signatureFromJWS(jwsSig)\n  };\n}\n\nfunction VerifyStream(opts) {\n  opts = opts || {};\n  var secretOrKey = opts.secret||",
+      "lines": 125,
+      "fragment": "/*global module*/\nvar Buffer = require('safe-buffer').Buffer;\nvar DataStream = require('./data-stream');\nvar jwa = require('jwa');\nvar Stream = require('stream');\nvar toString = require('./tostring');\nvar util = require('util');\nvar JWS_REGEX = /^[a-zA-Z0-9\\-_]+?\\.[a-zA-Z0-9\\-_]+?\\.([a-zA-Z0-9\\-_]+)?$/;\n\nfunction isObject(thing) {\n  return Object.prototype.toString.call(thing) === '[object Object]';\n}\n\nfunction safeJsonParse(thing) {\n  if (isObject(thing))\n    return thing;\n  try { return JSON.parse(thing); }\n  catch (e) { return undefined; }\n}\n\nfunction headerFromJWS(jwsSig) {\n  var encodedHeader = jwsSig.split('.', 1)[0];\n  return safeJsonParse(Buffer.from(encodedHeader, 'base64').toString('binary'));\n}\n\nfunction securedInputFromJWS(jwsSig) {\n  return jwsSig.split('.', 2).join('.');\n}\n\nfunction signatureFromJWS(jwsSig) {\n  return jwsSig.split('.')[2];\n}\n\nfunction payloadFromJWS(jwsSig, encoding) {\n  encoding = encoding || 'utf8';\n  var payload = jwsSig.split('.')[1];\n  return Buffer.from(payload, 'base64').toString(encoding);\n}\n\nfunction isValidJws(string) {\n  return JWS_REGEX.test(string) && !!headerFromJWS(string);\n}\n\nfunction jwsVerify(jwsSig, algorithm, secretOrKey) {\n  if (!algorithm) {\n    var err = new Error(\"Missing algorithm parameter for jws.verify\");\n    err.code = \"MISSING_ALGORITHM\";\n    throw err;\n  }\n  jwsSig = toString(jwsSig);\n  var signature = signatureFromJWS(jwsSig);\n  var securedInput = securedInputFromJWS(jwsSig);\n  var algo = jwa(algorithm);\n  return algo.verify(securedInput, signature, secretOrKey);\n}\n\nfunction jwsDecode(jwsSig, opts) {\n  opts = opts || {};\n  jwsSig = toString(jwsSig);\n\n  if (!isValidJws(jwsSig))\n    return null;\n\n  var header = headerFromJWS(jwsSig);\n\n  if (!header)\n    return null;\n\n  var payload = payloadFromJWS(jwsSig);\n  if (header.typ === 'JWT' || opts.json)\n    payload = JSON.parse(payload, opts.encoding);\n\n  return {\n    header: header,\n    payload: payload,\n    signature: signatureFromJWS(jwsSig)\n  };\n}\n\nfunction VerifyStream(opts) {\n  opts = opts || {};\n  var secretOrKey = opts.secret;\n  secretOrKey = secretOrKey == null ? opts.publicKey : secretOrKey;\n  secretOrKey = secretOrKey == null ? opts.key : secretOrKey;\n  if (/^hs/i.test(opts.algorithm) === true && secretOrKey == null) {\n    throw new TypeError('secret must be a string or buffer or a KeyObject')\n  }\n  var secretStream = new DataStream(secretOrKey);\n  this.readable = true;\n  this.algorithm = opts.algorithm;\n  this.encoding = opts.encoding;\n  this.secret = this.publicKey = this.key = secretStream;\n  this.signature = new DataStream(opts.signature);\n  this.secret.once('close', function () {\n    if (!this.signature.writable && this.readable)\n      this.verify();\n  }.bind(this));\n\n  this.signature.once('close', function () {\n    if (!this.secret.writable && this.readable)\n      this.verify();\n  }.bind(this));\n}\nutil.inherits(VerifyStream, Stream);\nVerifyStream.prototype.verify = function verify() {\n  try {\n    var valid = jwsVerify(this.signature.buffer, this.algorithm, this.key.buffer);\n    var obj = jwsDecode(this.signature.buffer, this.encoding);\n    this.emit('done', valid, obj);\n    this.emit('data', valid);\n    this.emit('end');\n    this.readable = false;\n    return valid;\n  } catch (e) {\n    this.readable = false;\n    this.emit('error', e);\n    this.emit('close');\n  }\n};\n\nVerifyStream.decode = jwsDecode;\nVerifyStream.isValid = isValidJws;\nVerifyStream.verify = jwsVerify;\n\nmodule.exports = VerifyStream;",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\jws\\lib\\verify-stream.js",
         "start": 1,
-        "end": 82,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 82,
-          "column": 3,
-          "position": 717
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\gtoken\\node_modules\\jws\\lib\\verify-stream.js",
-        "start": 1,
-        "end": 82,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 82,
-          "column": 2,
-          "position": 717
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 38,
-      "fragment": "var secretStream = new DataStream(secretOrKey);\n  this.readable = true;\n  this.algorithm = opts.algorithm;\n  this.encoding = opts.encoding;\n  this.secret = this.publicKey = this.key = secretStream;\n  this.signature = new DataStream(opts.signature);\n  this.secret.once('close', function () {\n    if (!this.signature.writable && this.readable)\n      this.verify();\n  }.bind(this));\n\n  this.signature.once('close', function () {\n    if (!this.secret.writable && this.readable)\n      this.verify();\n  }.bind(this));\n}\nutil.inherits(VerifyStream, Stream);\nVerifyStream.prototype.verify = function verify() {\n  try {\n    var valid = jwsVerify(this.signature.buffer, this.algorithm, this.key.buffer);\n    var obj = jwsDecode(this.signature.buffer, this.encoding);\n    this.emit('done', valid, obj);\n    this.emit('data', valid);\n    this.emit('end');\n    this.readable = false;\n    return valid;\n  } catch (e) {\n    this.readable = false;\n    this.emit('error', e);\n    this.emit('close');\n  }\n};\n\nVerifyStream.decode = jwsDecode;\nVerifyStream.isValid = isValidJws;\nVerifyStream.verify = jwsVerify;\n\nmodule.exports = VerifyStream;",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\jws\\lib\\verify-stream.js",
-        "start": 83,
-        "end": 120,
-        "startLoc": {
-          "line": 83,
-          "column": 3,
-          "position": 728
-        },
-        "endLoc": {
-          "line": 120,
-          "column": 2,
-          "position": 1143
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\gtoken\\node_modules\\jws\\lib\\verify-stream.js",
-        "start": 88,
         "end": 125,
         "startLoc": {
-          "line": 88,
-          "column": 3,
-          "position": 805
+          "line": 1,
+          "column": 1,
+          "position": 0
+        },
+        "endLoc": {
+          "line": 125,
+          "column": 2,
+          "position": 1220
+        }
+      },
+      "secondFile": {
+        "name": "node_modules\\gtoken\\node_modules\\jws\\lib\\verify-stream.js",
+        "start": 1,
+        "end": 125,
+        "startLoc": {
+          "line": 1,
+          "column": 1,
+          "position": 0
         },
         "endLoc": {
           "line": 125,
@@ -148659,68 +148323,32 @@
     },
     {
       "format": "javascript",
-      "lines": 37,
-      "fragment": "/*global module*/\nvar Buffer = require('safe-buffer').Buffer;\nvar DataStream = require('./data-stream');\nvar jwa = require('jwa');\nvar Stream = require('stream');\nvar toString = require('./tostring');\nvar util = require('util');\n\nfunction base64url(string, encoding) {\n  return Buffer\n    .from(string, encoding)\n    .toString('base64')\n    .replace(/=/g, '')\n    .replace(/\\+/g, '-')\n    .replace(/\\//g, '_');\n}\n\nfunction jwsSecuredInput(header, payload, encoding) {\n  encoding = encoding || 'utf8';\n  var encodedHeader = base64url(toString(header), 'binary');\n  var encodedPayload = base64url(toString(payload), encoding);\n  return util.format('%s.%s', encodedHeader, encodedPayload);\n}\n\nfunction jwsSign(opts) {\n  var header = opts.header;\n  var payload = opts.payload;\n  var secretOrKey = opts.secret || opts.privateKey;\n  var encoding = opts.encoding;\n  var algo = jwa(header.alg);\n  var securedInput = jwsSecuredInput(header, payload, encoding);\n  var signature = algo.sign(securedInput, secretOrKey);\n  return util.format('%s.%s', securedInput, signature);\n}\n\nfunction SignStream(opts) {\n  var secret = opts.secret||",
+      "lines": 83,
+      "fragment": "/*global module*/\nvar Buffer = require('safe-buffer').Buffer;\nvar DataStream = require('./data-stream');\nvar jwa = require('jwa');\nvar Stream = require('stream');\nvar toString = require('./tostring');\nvar util = require('util');\n\nfunction base64url(string, encoding) {\n  return Buffer\n    .from(string, encoding)\n    .toString('base64')\n    .replace(/=/g, '')\n    .replace(/\\+/g, '-')\n    .replace(/\\//g, '_');\n}\n\nfunction jwsSecuredInput(header, payload, encoding) {\n  encoding = encoding || 'utf8';\n  var encodedHeader = base64url(toString(header), 'binary');\n  var encodedPayload = base64url(toString(payload), encoding);\n  return util.format('%s.%s', encodedHeader, encodedPayload);\n}\n\nfunction jwsSign(opts) {\n  var header = opts.header;\n  var payload = opts.payload;\n  var secretOrKey = opts.secret || opts.privateKey;\n  var encoding = opts.encoding;\n  var algo = jwa(header.alg);\n  var securedInput = jwsSecuredInput(header, payload, encoding);\n  var signature = algo.sign(securedInput, secretOrKey);\n  return util.format('%s.%s', securedInput, signature);\n}\n\nfunction SignStream(opts) {\n  var secret = opts.secret;\n  secret = secret == null ? opts.privateKey : secret;\n  secret = secret == null ? opts.key : secret;\n  if (/^hs/i.test(opts.header.alg) === true && secret == null) {\n    throw new TypeError('secret must be a string or buffer or a KeyObject')\n  }\n  var secretStream = new DataStream(secret);\n  this.readable = true;\n  this.header = opts.header;\n  this.encoding = opts.encoding;\n  this.secret = this.privateKey = this.key = secretStream;\n  this.payload = new DataStream(opts.payload);\n  this.secret.once('close', function () {\n    if (!this.payload.writable && this.readable)\n      this.sign();\n  }.bind(this));\n\n  this.payload.once('close', function () {\n    if (!this.secret.writable && this.readable)\n      this.sign();\n  }.bind(this));\n}\nutil.inherits(SignStream, Stream);\n\nSignStream.prototype.sign = function sign() {\n  try {\n    var signature = jwsSign({\n      header: this.header,\n      payload: this.payload.buffer,\n      secret: this.secret.buffer,\n      encoding: this.encoding\n    });\n    this.emit('done', signature);\n    this.emit('data', signature);\n    this.emit('end');\n    this.readable = false;\n    return signature;\n  } catch (e) {\n    this.readable = false;\n    this.emit('error', e);\n    this.emit('close');\n  }\n};\n\nSignStream.sign = jwsSign;\n\nmodule.exports = SignStream;",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\jws\\lib\\sign-stream.js",
         "start": 1,
-        "end": 37,
+        "end": 83,
         "startLoc": {
           "line": 1,
           "column": 1,
           "position": 0
         },
         "endLoc": {
-          "line": 37,
-          "column": 3,
-          "position": 384
+          "line": 83,
+          "column": 2,
+          "position": 873
         }
       },
       "secondFile": {
         "name": "node_modules\\gtoken\\node_modules\\jws\\lib\\verify-stream.js",
         "start": 1,
-        "end": 37,
+        "end": 83,
         "startLoc": {
           "line": 1,
           "column": 1,
           "position": 0
-        },
-        "endLoc": {
-          "line": 37,
-          "column": 2,
-          "position": 384
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 41,
-      "fragment": "var secretStream = new DataStream(secret);\n  this.readable = true;\n  this.header = opts.header;\n  this.encoding = opts.encoding;\n  this.secret = this.privateKey = this.key = secretStream;\n  this.payload = new DataStream(opts.payload);\n  this.secret.once('close', function () {\n    if (!this.payload.writable && this.readable)\n      this.sign();\n  }.bind(this));\n\n  this.payload.once('close', function () {\n    if (!this.secret.writable && this.readable)\n      this.sign();\n  }.bind(this));\n}\nutil.inherits(SignStream, Stream);\n\nSignStream.prototype.sign = function sign() {\n  try {\n    var signature = jwsSign({\n      header: this.header,\n      payload: this.payload.buffer,\n      secret: this.secret.buffer,\n      encoding: this.encoding\n    });\n    this.emit('done', signature);\n    this.emit('data', signature);\n    this.emit('end');\n    this.readable = false;\n    return signature;\n  } catch (e) {\n    this.readable = false;\n    this.emit('error', e);\n    this.emit('close');\n  }\n};\n\nSignStream.sign = jwsSign;\n\nmodule.exports = SignStream;",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\jws\\lib\\sign-stream.js",
-        "start": 38,
-        "end": 78,
-        "startLoc": {
-          "line": 38,
-          "column": 3,
-          "position": 395
-        },
-        "endLoc": {
-          "line": 78,
-          "column": 2,
-          "position": 794
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\gtoken\\node_modules\\jws\\lib\\sign-stream.js",
-        "start": 43,
-        "end": 83,
-        "startLoc": {
-          "line": 43,
-          "column": 3,
-          "position": 474
         },
         "endLoc": {
           "line": 83,
@@ -149379,397 +149007,289 @@
     },
     {
       "format": "javascript",
-      "lines": 10,
-      "fragment": ");\n            if (res && res.length) this.push(res, this.encoding);                \n            done();\n        }\n        catch (e) {\n            done(e);\n        }\n    }\n\n    IconvLiteDecoderStream.prototype.collect",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\iconv-lite\\lib\\streams.js",
-        "start": 86,
-        "end": 95,
-        "startLoc": {
-          "line": 86,
-          "column": 2,
-          "position": 764
-        },
-        "endLoc": {
-          "line": 95,
-          "column": 8,
-          "position": 831
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\iconv-lite\\lib\\streams.js",
-        "start": 75,
-        "end": 84,
-        "startLoc": {
-          "line": 75,
-          "column": 6,
-          "position": 669
-        },
-        "endLoc": {
-          "line": 84,
-          "column": 7,
-          "position": 735
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 7,
-      "fragment": ") {\n                res += this.iconv.decode(buf.slice(lastI, i), \"ascii\"); // Write direct chars.\n                lastI = i+1;\n                inBase64 = true;\n            }\n        } else { // We decode base64.\n            if (!base64IMAPChars",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 238,
-        "end": 244,
-        "startLoc": {
-          "line": 238,
-          "column": 8,
-          "position": 2087
-        },
-        "endLoc": {
-          "line": 244,
-          "column": 16,
-          "position": 2154
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 67,
-        "end": 73,
-        "startLoc": {
-          "line": 67,
-          "column": 9,
-          "position": 541
-        },
-        "endLoc": {
-          "line": 73,
-          "column": 12,
-          "position": 608
-        }
-      }
-    },
-    {
-      "format": "javascript",
       "lines": 13,
-      "fragment": "i--;\n\n                lastI = i+1;\n                inBase64 = false;\n                base64Accum = '';\n            }\n        }\n    }\n\n    if (!inBase64) {\n        res += this.iconv.decode(buf.slice(lastI), \"ascii\"); // Write direct chars.\n    } else {\n        var b64str = base64Accum + this.iconv.decode(buf.slice(lastI), \"ascii\").",
+      "fragment": "{ i-- }\n\n        lastI = i + 1\n        inBase64 = false\n        base64Accum = \"\"\n      }\n    }\n  }\n\n  if (!inBase64) {\n    res += this.iconv.decode(buf.slice(lastI), \"ascii\") // Write direct chars.\n  } else {\n    var b64str = base64Accum + this.iconv.decode(buf.slice(lastI), \"ascii\").",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 253,
-        "end": 265,
+        "start": 249,
+        "end": 261,
         "startLoc": {
-          "line": 253,
-          "column": 21,
-          "position": 2295
+          "line": 249,
+          "column": 9,
+          "position": 2258
         },
         "endLoc": {
-          "line": 265,
+          "line": 261,
           "column": 2,
-          "position": 2405
+          "position": 2369
         }
       },
       "secondFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 82,
-        "end": 94,
+        "start": 84,
+        "end": 98,
         "startLoc": {
-          "line": 82,
-          "column": 21,
-          "position": 740
+          "line": 84,
+          "column": 9,
+          "position": 735
         },
         "endLoc": {
-          "line": 94,
-          "column": 2,
-          "position": 850
+          "line": 98,
+          "column": 4,
+          "position": 849
         }
       }
     },
     {
       "format": "javascript",
       "lines": 16,
-      "fragment": ");\n\n        var canBeDecoded = b64str.length - (b64str.length % 8); // Minimal chunk: 2 quads -> 2x3 bytes -> 3 chars.\n        base64Accum = b64str.slice(canBeDecoded); // The rest will be decoded in future.\n        b64str = b64str.slice(0, canBeDecoded);\n\n        res += this.iconv.decode(Buffer.from(b64str, 'base64'), \"utf16-be\");\n    }\n\n    this.inBase64 = inBase64;\n    this.base64Accum = base64Accum;\n\n    return res;\n}\n\nUtf7IMAPDecoder",
+      "fragment": ")\n\n    var canBeDecoded = b64str.length - (b64str.length % 8) // Minimal chunk: 2 quads -> 2x3 bytes -> 3 chars.\n    base64Accum = b64str.slice(canBeDecoded) // The rest will be decoded in future.\n    b64str = b64str.slice(0, canBeDecoded)\n\n    res += this.iconv.decode(Buffer.from(b64str, \"base64\"), \"utf16-be\")\n  }\n\n  this.inBase64 = inBase64\n  this.base64Accum = base64Accum\n\n  return res\n}\n\nUtf7IMAPDecoder",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 265,
-        "end": 280,
+        "start": 261,
+        "end": 276,
         "startLoc": {
-          "line": 265,
+          "line": 261,
           "column": 4,
-          "position": 2412
+          "position": 2376
         },
         "endLoc": {
-          "line": 280,
+          "line": 276,
           "column": 16,
-          "position": 2534
+          "position": 2490
         }
       },
       "secondFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 94,
-        "end": 109,
+        "start": 96,
+        "end": 111,
         "startLoc": {
-          "line": 94,
+          "line": 96,
           "column": 8,
-          "position": 849
+          "position": 845
         },
         "endLoc": {
-          "line": 109,
+          "line": 111,
           "column": 12,
-          "position": 971
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 9,
-      "fragment": ".prototype.end = function() {\n    var res = \"\";\n    if (this.inBase64 && this.base64Accum.length > 0)\n        res = this.iconv.decode(Buffer.from(this.base64Accum, 'base64'), \"utf16-be\");\n\n    this.inBase64 = false;\n    this.base64Accum = '';\n    return res;\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 280,
-        "end": 288,
-        "startLoc": {
-          "line": 280,
-          "column": 16,
-          "position": 2535
-        },
-        "endLoc": {
-          "line": 288,
-          "column": 2,
-          "position": 2634
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
-        "start": 109,
-        "end": 117,
-        "startLoc": {
-          "line": 109,
-          "column": 12,
-          "position": 972
-        },
-        "endLoc": {
-          "line": 117,
-          "column": 2,
-          "position": 1071
+          "position": 959
         }
       }
     },
     {
       "format": "javascript",
       "lines": 8,
-      "fragment": "var encoding = detectEncoding(this.initialBufs, this.options.defaultEncoding);\n        this.decoder = this.iconv.getDecoder(encoding, this.options);\n\n        var resStr = '';\n        for (var i = 0; i < this.initialBufs.length; i++)\n            resStr += this.decoder.write(this.initialBufs[i]);\n\n        var",
+      "fragment": ".prototype.end = function () {\n  var res = \"\"\n  if (this.inBase64 && this.base64Accum.length > 0) { res = this.iconv.decode(Buffer.from(this.base64Accum, \"base64\"), \"utf16-be\") }\n\n  this.inBase64 = false\n  this.base64Accum = \"\"\n  return res\n}",
       "tokens": 0,
       "firstFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
-        "start": 257,
-        "end": 264,
+        "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
+        "start": 276,
+        "end": 283,
         "startLoc": {
-          "line": 257,
-          "column": 9,
-          "position": 2246
+          "line": 276,
+          "column": 16,
+          "position": 2491
         },
         "endLoc": {
-          "line": 264,
-          "column": 4,
-          "position": 2350
+          "line": 283,
+          "column": 2,
+          "position": 2589
         }
       },
       "secondFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
-        "start": 241,
-        "end": 248,
+        "name": "node_modules\\iconv-lite\\encodings\\utf7.js",
+        "start": 111,
+        "end": 118,
         "startLoc": {
-          "line": 241,
-          "column": 9,
-          "position": 2071
+          "line": 111,
+          "column": 12,
+          "position": 960
         },
         "endLoc": {
-          "line": 248,
-          "column": 5,
-          "position": 2175
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 10,
-      "fragment": "(options, codec) {\n    this.decoder = null;\n    this.initialBufs = [];\n    this.initialBufsLen = 0;\n\n    this.options = options || {};\n    this.iconv = codec.iconv;\n}\n\nUtf16Decoder",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf16.js",
-        "start": 105,
-        "end": 114,
-        "startLoc": {
-          "line": 105,
-          "column": 13,
-          "position": 755
-        },
-        "endLoc": {
-          "line": 114,
-          "column": 13,
-          "position": 826
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
-        "start": 223,
-        "end": 231,
-        "startLoc": {
-          "line": 223,
-          "column": 17,
-          "position": 1920
-        },
-        "endLoc": {
-          "line": 231,
-          "column": 17,
-          "position": 1990
+          "line": 118,
+          "column": 2,
+          "position": 1058
         }
       }
     },
     {
       "format": "javascript",
       "lines": 7,
-      "fragment": ".prototype.write = function(buf) {\n    if (!this.decoder) {\n        // Codec is not chosen yet. Accumulate initial bytes.\n        this.initialBufs.push(buf);\n        this.initialBufsLen += buf.length;\n        \n        if (this.initialBufsLen < 16",
+      "fragment": "var encoding = detectEncoding(this.initialBufs, this.options.defaultEncoding)\n    this.decoder = this.iconv.getDecoder(encoding, this.options)\n\n    var resStr = \"\"\n    for (var i = 0; i < this.initialBufs.length; i++) { resStr += this.decoder.write(this.initialBufs[i]) }\n\n    var",
       "tokens": 0,
       "firstFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf16.js",
-        "start": 114,
-        "end": 120,
-        "startLoc": {
-          "line": 114,
-          "column": 13,
-          "position": 827
-        },
-        "endLoc": {
-          "line": 120,
-          "column": 3,
-          "position": 891
-        }
-      },
-      "secondFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
-        "start": 231,
-        "end": 237,
-        "startLoc": {
-          "line": 231,
-          "column": 17,
-          "position": 1991
-        },
-        "endLoc": {
-          "line": 237,
-          "column": 3,
-          "position": 2055
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 19,
-      "fragment": ") // We need more bytes to use space heuristic (see below)\n            return '';\n\n        // We have enough bytes -> detect endianness.\n        var encoding = detectEncoding(this.initialBufs, this.options.defaultEncoding);\n        this.decoder = this.iconv.getDecoder(encoding, this.options);\n\n        var resStr = '';\n        for (var i = 0; i < this.initialBufs.length; i++)\n            resStr += this.decoder.write(this.initialBufs[i]);\n\n        this.initialBufs.length = this.initialBufsLen = 0;\n        return resStr;\n    }\n\n    return this.decoder.write(buf);\n}\n\nUtf16Decoder",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf16.js",
-        "start": 120,
-        "end": 138,
-        "startLoc": {
-          "line": 120,
-          "column": 3,
-          "position": 892
-        },
-        "endLoc": {
-          "line": 138,
-          "column": 13,
-          "position": 1054
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
-        "start": 237,
+        "start": 247,
         "end": 253,
         "startLoc": {
-          "line": 237,
-          "column": 3,
-          "position": 2056
+          "line": 247,
+          "column": 5,
+          "position": 2209
         },
         "endLoc": {
           "line": 253,
-          "column": 2,
-          "position": 2216
+          "column": 4,
+          "position": 2312
+        }
+      },
+      "secondFile": {
+        "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
+        "start": 232,
+        "end": 238,
+        "startLoc": {
+          "line": 232,
+          "column": 5,
+          "position": 2038
+        },
+        "endLoc": {
+          "line": 238,
+          "column": 5,
+          "position": 2141
         }
       }
     },
     {
       "format": "javascript",
-      "lines": 20,
-      "fragment": ".prototype.end = function() {\n    if (!this.decoder) {\n        var encoding = detectEncoding(this.initialBufs, this.options.defaultEncoding);\n        this.decoder = this.iconv.getDecoder(encoding, this.options);\n\n        var resStr = '';\n        for (var i = 0; i < this.initialBufs.length; i++)\n            resStr += this.decoder.write(this.initialBufs[i]);\n\n        var trail = this.decoder.end();\n        if (trail)\n            resStr += trail;\n\n        this.initialBufs.length = this.initialBufsLen = 0;\n        return resStr;\n    }\n    return this.decoder.end();\n}\n\nfunction",
+      "lines": 7,
+      "fragment": ".prototype.write = function (buf) {\n  if (!this.decoder) {\n    // Codec is not chosen yet. Accumulate initial bytes.\n    this.initialBufs.push(buf)\n    this.initialBufsLen += buf.length\n\n    if (this.initialBufsLen < 16",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf16.js",
-        "start": 138,
-        "end": 157,
+        "start": 107,
+        "end": 113,
         "startLoc": {
-          "line": 138,
+          "line": 107,
           "column": 13,
-          "position": 1055
+          "position": 824
         },
         "endLoc": {
-          "line": 157,
-          "column": 9,
-          "position": 1258
+          "line": 113,
+          "column": 3,
+          "position": 886
         }
       },
       "secondFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
-        "start": 255,
-        "end": 273,
+        "start": 222,
+        "end": 228,
         "startLoc": {
-          "line": 255,
+          "line": 222,
           "column": 17,
-          "position": 2220
+          "position": 1957
         },
         "endLoc": {
-          "line": 273,
-          "column": 2,
-          "position": 2422
+          "line": 228,
+          "column": 3,
+          "position": 2019
+        }
+      }
+    },
+    {
+      "format": "javascript",
+      "lines": 18,
+      "fragment": ") // We need more bytes to use space heuristic (see below)\n    { return \"\" }\n\n    // We have enough bytes -> detect endianness.\n    var encoding = detectEncoding(this.initialBufs, this.options.defaultEncoding)\n    this.decoder = this.iconv.getDecoder(encoding, this.options)\n\n    var resStr = \"\"\n    for (var i = 0; i < this.initialBufs.length; i++) { resStr += this.decoder.write(this.initialBufs[i]) }\n\n    this.initialBufs.length = this.initialBufsLen = 0\n    return resStr\n  }\n\n  return this.decoder.write(buf)\n}\n\nUtf16Decoder",
+      "tokens": 0,
+      "firstFile": {
+        "name": "node_modules\\iconv-lite\\encodings\\utf16.js",
+        "start": 113,
+        "end": 130,
+        "startLoc": {
+          "line": 113,
+          "column": 3,
+          "position": 887
+        },
+        "endLoc": {
+          "line": 130,
+          "column": 13,
+          "position": 1048
+        }
+      },
+      "secondFile": {
+        "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
+        "start": 228,
+        "end": 245,
+        "startLoc": {
+          "line": 228,
+          "column": 3,
+          "position": 2020
+        },
+        "endLoc": {
+          "line": 245,
+          "column": 17,
+          "position": 2181
+        }
+      }
+    },
+    {
+      "format": "javascript",
+      "lines": 21,
+      "fragment": ".prototype.end = function () {\n  if (!this.decoder) {\n    var encoding = detectEncoding(this.initialBufs, this.options.defaultEncoding)\n    this.decoder = this.iconv.getDecoder(encoding, this.options)\n\n    var resStr = \"\"\n    for (var i = 0; i < this.initialBufs.length; i++) { resStr += this.decoder.write(this.initialBufs[i]) }\n\n    var trail = this.decoder.end()\n    if (trail) { resStr += trail }\n\n    this.initialBufs.length = this.initialBufsLen = 0\n    return resStr\n  }\n  return this.decoder.end()\n}\n\nfunction detectEncoding (bufs, defaultEncoding) {\n  var b = []\n  var charsProcessed = 0\n  // Number of ASCII chars when decoded as LE or BE.",
+      "tokens": 0,
+      "firstFile": {
+        "name": "node_modules\\iconv-lite\\encodings\\utf16.js",
+        "start": 130,
+        "end": 150,
+        "startLoc": {
+          "line": 130,
+          "column": 13,
+          "position": 1049
+        },
+        "endLoc": {
+          "line": 150,
+          "column": 51,
+          "position": 1283
+        }
+      },
+      "secondFile": {
+        "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
+        "start": 245,
+        "end": 266,
+        "startLoc": {
+          "line": 245,
+          "column": 17,
+          "position": 2182
+        },
+        "endLoc": {
+          "line": 266,
+          "column": 4,
+          "position": 2417
         }
       }
     },
     {
       "format": "javascript",
       "lines": 6,
-      "fragment": "outer_loop:\n    for (var i = 0; i < bufs.length; i++) {\n        var buf = bufs[i];\n        for (var j = 0; j < buf.length; j++) {\n            b.push(buf[j]);\n            if (b.length === 2",
+      "fragment": "outerLoop:\n  for (var i = 0; i < bufs.length; i++) {\n    var buf = bufs[i]\n    for (var j = 0; j < buf.length; j++) {\n      b.push(buf[j])\n      if (b.length === 2",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf16.js",
-        "start": 162,
-        "end": 167,
+        "start": 154,
+        "end": 159,
         "startLoc": {
-          "line": 162,
-          "column": 5,
-          "position": 1312
+          "line": 154,
+          "column": 3,
+          "position": 1305
         },
         "endLoc": {
-          "line": 167,
+          "line": 159,
           "column": 2,
-          "position": 1406
+          "position": 1397
         }
       },
       "secondFile": {
         "name": "node_modules\\iconv-lite\\encodings\\utf32.js",
-        "start": 281,
-        "end": 286,
+        "start": 269,
+        "end": 274,
         "startLoc": {
-          "line": 281,
-          "column": 5,
-          "position": 2498
+          "line": 269,
+          "column": 3,
+          "position": 2458
         },
         "endLoc": {
-          "line": 286,
+          "line": 274,
           "column": 2,
-          "position": 2592
+          "position": 2550
         }
       }
     },
@@ -164174,258 +163694,6 @@
       }
     },
     {
-      "format": "url",
-      "lines": 9,
-      "fragment": "rns `true` if you should retry the rest.\n\n<!-- eslint-disable no-undef, no-unused-expressions -->\n\n```js\nstatus.retry[501] // => undefined\nstatus.retry[503] // => true\n```\n\n## License\n\n[MIT](LICENSE)\n\n[ci-image]: https://badgen.net/github/checks/jshttp/statuses/master?label=ci\n[ci-url]: https://github.com/jshttp/statuses/actions?query=workflow%3Aci\n[coveralls-image]: https://badgen.net/coveralls/c/github/jshttp/statuses/master\n[coveralls-url]: https://coveralls.io/r/jshttp/statuses?branch=master\n[node-version-image]: https://badgen.net/npm/node/statuses\n[node-ve",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\statuses\\README.md",
-        "start": 129,
-        "end": 137,
-        "startLoc": {
-          "line": 129,
-          "column": 1,
-          "position": 647
-        },
-        "endLoc": {
-          "line": 137,
-          "column": 35,
-          "position": 699
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\http-errors\\node_modules\\statuses\\README.md",
-        "start": 128,
-        "end": 136,
-        "startLoc": {
-          "line": 128,
-          "column": 1,
-          "position": 642
-        },
-        "endLoc": {
-          "line": 136,
-          "column": 35,
-          "position": 694
-        }
-      }
-    },
-    {
-      "format": "markdown",
-      "lines": 118,
-      "fragment": "ualizer]\n\nHTTP status utility for node.\n\nThis module provides a list of status codes and messages sourced from\na few different projects:\n\n  * The [IANA Status Code Registry](https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml)\n  * The [Node.js project](https://nodejs.org/)\n  * The [NGINX project](https://www.nginx.com/)\n  * The [Apache HTTP Server project](https://httpd.apache.org/)\n\n## Installation\n\nThis is a [Node.js](https://nodejs.org/en/) module available through the\n[npm registry](https://www.npmjs.com/). Installation is done using the\n[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):\n\n```sh\n$ npm install statuses\n```\n\n## API\n\n<!-- eslint-disable no-unused-vars -->\n\n```js\nvar status = require('statuses')\n```\n\n### status(code)\n\nReturns the status message string for a known HTTP status code. The code\nmay be a number or a string. An error is thrown for an unknown status code.\n\n<!-- eslint-disable no-undef -->\n\n```js\nstatus(403) // => 'Forbidden'\nstatus('403') // => 'Forbidden'\nstatus(306) // throws\n```\n\n### status(msg)\n\nReturns the numeric status code for a known HTTP status message. The message\nis case-insensitive. An error is thrown for an unknown status message.\n\n<!-- eslint-disable no-undef -->\n\n```js\nstatus('forbidden') // => 403\nstatus('Forbidden') // => 403\nstatus('foo') // throws\n```\n\n### status.codes\n\nReturns an array of all the status codes as `Integer`s.\n\n### status.code[msg]\n\nReturns the numeric status code for a known status message (in lower-case),\notherwise `undefined`.\n\n<!-- eslint-disable no-undef, no-unused-expressions -->\n\n```js\nstatus['not found'] // => 404\n```\n\n### status.empty[code]\n\nReturns `true` if a status code expects an empty body.\n\n<!-- eslint-disable no-undef, no-unused-expressions -->\n\n```js\nstatus.empty[200] // => undefined\nstatus.empty[204] // => true\nstatus.empty[304] // => true\n```\n\n### status.message[code]\n\nReturns the string message for a known numeric status code, otherwise\n`undefined`. This object is the same format as the\n[Node.js http module `http.STATUS_CODES`](https://nodejs.org/dist/latest/docs/api/http.html#http_http_status_codes).\n\n<!-- eslint-disable no-undef, no-unused-expressions -->\n\n```js\nstatus.message[404] // => 'Not Found'\n```\n\n### status.redirect[code]\n\nReturns `true` if a status code is a valid redirect status.\n\n<!-- eslint-disable no-undef, no-unused-expressions -->\n\n```js\nstatus.redirect[200] // => undefined\nstatus.redirect[301] // => true\n```\n\n### status.retry[code]\n\nRe",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\statuses\\README.md",
-        "start": 10,
-        "end": 127,
-        "startLoc": {
-          "line": 10,
-          "column": 1,
-          "position": 33
-        },
-        "endLoc": {
-          "line": 127,
-          "column": 15,
-          "position": 644
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\http-errors\\node_modules\\statuses\\README.md",
-        "start": 9,
-        "end": 126,
-        "startLoc": {
-          "line": 9,
-          "column": 1,
-          "position": 28
-        },
-        "endLoc": {
-          "line": 126,
-          "column": 15,
-          "position": 639
-        }
-      }
-    },
-    {
-      "format": "json",
-      "lines": 20,
-      "fragment": ",\n  \"contributors\": [\n    \"Douglas Christopher Wilson <doug@somethingdoug.com>\",\n    \"Jonathan Ong <me@jongleberry.com> (http://jongleberry.com)\"\n  ],\n  \"repository\": \"jshttp/statuses\",\n  \"license\": \"MIT\",\n  \"keywords\": [\n    \"http\",\n    \"status\",\n    \"code\"\n  ],\n  \"files\": [\n    \"HISTORY.md\",\n    \"index.js\",\n    \"codes.json\",\n    \"LICENSE\"\n  ],\n  \"devDependencies\": {\n    \"csv-parse\": \"4.16.3\"",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\statuses\\package.json",
-        "start": 4,
-        "end": 23,
-        "startLoc": {
-          "line": 4,
-          "column": 8,
-          "position": 21
-        },
-        "endLoc": {
-          "line": 23,
-          "column": 9,
-          "position": 110
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\http-errors\\node_modules\\statuses\\package.json",
-        "start": 4,
-        "end": 23,
-        "startLoc": {
-          "line": 4,
-          "column": 8,
-          "position": 21
-        },
-        "endLoc": {
-          "line": 23,
-          "column": 9,
-          "position": 110
-        }
-      }
-    },
-    {
-      "format": "json",
-      "lines": 17,
-      "fragment": ",\n    \"stream-to-array\": \"2.3.0\"\n  },\n  \"engines\": {\n    \"node\": \">= 0.8\"\n  },\n  \"scripts\": {\n    \"build\": \"node scripts/build.js\",\n    \"fetch\": \"node scripts/fetch-apache.js && node scripts/fetch-iana.js && node scripts/fetch-nginx.js && node scripts/fetch-node.js\",\n    \"lint\": \"eslint --plugin markdown --ext js,md .\",\n    \"test\": \"mocha --reporter spec --check-leaks --bail test/\",\n    \"test-ci\": \"nyc --reporter=lcov --reporter=text npm test\",\n    \"test-cov\": \"nyc --reporter=html --reporter=text npm test\",\n    \"update\": \"npm run fetch && npm run build\",\n    \"version\": \"node scripts/version-history.js && git add HISTORY.md\"\n  }\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\statuses\\package.json",
-        "start": 33,
-        "end": 49,
-        "startLoc": {
-          "line": 33,
-          "column": 8,
-          "position": 181
-        },
-        "endLoc": {
-          "line": 49,
-          "column": 2,
-          "position": 273
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\http-errors\\node_modules\\statuses\\package.json",
-        "start": 33,
-        "end": 49,
-        "startLoc": {
-          "line": 33,
-          "column": 8,
-          "position": 181
-        },
-        "endLoc": {
-          "line": 49,
-          "column": 2,
-          "position": 273
-        }
-      }
-    },
-    {
-      "format": "javascript",
-      "lines": 146,
-      "fragment": "/*!\n * statuses\n * Copyright(c) 2014 Jonathan Ong\n * Copyright(c) 2016 Douglas Christopher Wilson\n * MIT Licensed\n */\n\n'use strict'\n\n/**\n * Module dependencies.\n * @private\n */\n\nvar codes = require('./codes.json')\n\n/**\n * Module exports.\n * @public\n */\n\nmodule.exports = status\n\n// status code to message map\nstatus.message = codes\n\n// status message (lower-case) to code map\nstatus.code = createMessageToStatusCodeMap(codes)\n\n// array of status codes\nstatus.codes = createStatusCodeList(codes)\n\n// status codes for redirects\nstatus.redirect = {\n  300: true,\n  301: true,\n  302: true,\n  303: true,\n  305: true,\n  307: true,\n  308: true\n}\n\n// status codes for empty bodies\nstatus.empty = {\n  204: true,\n  205: true,\n  304: true\n}\n\n// status codes for when you should retry the request\nstatus.retry = {\n  502: true,\n  503: true,\n  504: true\n}\n\n/**\n * Create a map of message to status code.\n * @private\n */\n\nfunction createMessageToStatusCodeMap (codes) {\n  var map = {}\n\n  Object.keys(codes).forEach(function forEachCode (code) {\n    var message = codes[code]\n    var status = Number(code)\n\n    // populate map\n    map[message.toLowerCase()] = status\n  })\n\n  return map\n}\n\n/**\n * Create a list of all status codes.\n * @private\n */\n\nfunction createStatusCodeList (codes) {\n  return Object.keys(codes).map(function mapCode (code) {\n    return Number(code)\n  })\n}\n\n/**\n * Get the status code for given message.\n * @private\n */\n\nfunction getStatusCode (message) {\n  var msg = message.toLowerCase()\n\n  if (!Object.prototype.hasOwnProperty.call(status.code, msg)) {\n    throw new Error('invalid status message: \"' + message + '\"')\n  }\n\n  return status.code[msg]\n}\n\n/**\n * Get the status message for given code.\n * @private\n */\n\nfunction getStatusMessage (code) {\n  if (!Object.prototype.hasOwnProperty.call(status.message, code)) {\n    throw new Error('invalid status code: ' + code)\n  }\n\n  return status.message[code]\n}\n\n/**\n * Get the status code.\n *\n * Given a number, this will throw if it is not a known status\n * code, otherwise the code will be returned. Given a string,\n * the string will be parsed for a number and return the code\n * if valid, otherwise will lookup the code assuming this is\n * the status message.\n *\n * @param {string|number} code\n * @returns {number}\n * @public\n */\n\nfunction status (code) {\n  if (typeof code === 'number') {\n    return getStatusMessage(code)\n  }\n\n  if (typeof code !== 'string') {\n    throw new TypeError('code must be a number or string')\n  }\n\n  // '403'\n  var n = parseInt(code, 10)\n  if (!isNaN(n)) {\n    return getStatusMessage(n)\n  }\n\n  return getStatusCode(code)\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\statuses\\index.js",
-        "start": 1,
-        "end": 146,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 146,
-          "column": 2,
-          "position": 622
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\http-errors\\node_modules\\statuses\\index.js",
-        "start": 1,
-        "end": 146,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 146,
-          "column": 2,
-          "position": 622
-        }
-      }
-    },
-    {
-      "format": "markdown",
-      "lines": 66,
-      "fragment": "e to `String.prototype.slice()`\n\n2.0.1 / 2021-01-03\n==================\n\n  * Fix returning values from `Object.prototype`\n\n2.0.0 / 2020-04-19\n==================\n\n  * Drop support for Node.js 0.6\n  * Fix messaging casing of `418 I'm a Teapot`\n  * Remove code 306\n  * Remove `status[code]` exports; use `status.message[code]`\n  * Remove `status[msg]` exports; use `status.code[msg]`\n  * Rename `425 Unordered Collection` to standard `425 Too Early`\n  * Rename `STATUS_CODES` export to `message`\n  * Return status message for `statuses(code)` when given code\n\n1.5.0 / 2018-03-27\n==================\n\n  * Add `103 Early Hints`\n\n1.4.0 / 2017-10-20\n==================\n\n  * Add `STATUS_CODES` export\n\n1.3.1 / 2016-11-11\n==================\n\n  * Fix return type in JSDoc\n\n1.3.0 / 2016-05-17\n==================\n\n  * Add `421 Misdirected Request`\n  * perf: enable strict mode\n\n1.2.1 / 2015-02-01\n==================\n\n  * Fix message for status 451\n    - `451 Unavailable For Legal Reasons`\n\n1.2.0 / 2014-09-28\n==================\n\n  * Add",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\statuses\\HISTORY.md",
-        "start": 7,
-        "end": 72,
-        "startLoc": {
-          "line": 7,
-          "column": 3,
-          "position": 15
-        },
-        "endLoc": {
-          "line": 72,
-          "column": 8,
-          "position": 329
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\http-errors\\node_modules\\statuses\\HISTORY.md",
-        "start": 3,
-        "end": 68,
-        "startLoc": {
-          "line": 3,
-          "column": 3,
-          "position": 3
-        },
-        "endLoc": {
-          "line": 68,
-          "column": 8,
-          "position": 317
-        }
-      }
-    },
-    {
-      "format": "json",
-      "lines": 65,
-      "fragment": "{\n  \"100\": \"Continue\",\n  \"101\": \"Switching Protocols\",\n  \"102\": \"Processing\",\n  \"103\": \"Early Hints\",\n  \"200\": \"OK\",\n  \"201\": \"Created\",\n  \"202\": \"Accepted\",\n  \"203\": \"Non-Authoritative Information\",\n  \"204\": \"No Content\",\n  \"205\": \"Reset Content\",\n  \"206\": \"Partial Content\",\n  \"207\": \"Multi-Status\",\n  \"208\": \"Already Reported\",\n  \"226\": \"IM Used\",\n  \"300\": \"Multiple Choices\",\n  \"301\": \"Moved Permanently\",\n  \"302\": \"Found\",\n  \"303\": \"See Other\",\n  \"304\": \"Not Modified\",\n  \"305\": \"Use Proxy\",\n  \"307\": \"Temporary Redirect\",\n  \"308\": \"Permanent Redirect\",\n  \"400\": \"Bad Request\",\n  \"401\": \"Unauthorized\",\n  \"402\": \"Payment Required\",\n  \"403\": \"Forbidden\",\n  \"404\": \"Not Found\",\n  \"405\": \"Method Not Allowed\",\n  \"406\": \"Not Acceptable\",\n  \"407\": \"Proxy Authentication Required\",\n  \"408\": \"Request Timeout\",\n  \"409\": \"Conflict\",\n  \"410\": \"Gone\",\n  \"411\": \"Length Required\",\n  \"412\": \"Precondition Failed\",\n  \"413\": \"Payload Too Large\",\n  \"414\": \"URI Too Long\",\n  \"415\": \"Unsupported Media Type\",\n  \"416\": \"Range Not Satisfiable\",\n  \"417\": \"Expectation Failed\",\n  \"418\": \"I'm a Teapot\",\n  \"421\": \"Misdirected Request\",\n  \"422\": \"Unprocessable Entity\",\n  \"423\": \"Locked\",\n  \"424\": \"Failed Dependency\",\n  \"425\": \"Too Early\",\n  \"426\": \"Upgrade Required\",\n  \"428\": \"Precondition Required\",\n  \"429\": \"Too Many Requests\",\n  \"431\": \"Request Header Fields Too Large\",\n  \"451\": \"Unavailable For Legal Reasons\",\n  \"500\": \"Internal Server Error\",\n  \"501\": \"Not Implemented\",\n  \"502\": \"Bad Gateway\",\n  \"503\": \"Service Unavailable\",\n  \"504\": \"Gateway Timeout\",\n  \"505\": \"HTTP Version Not Supported\",\n  \"506\": \"Variant Also Negotiates\",\n  \"507\": \"Insufficient Storage\",\n  \"508\": \"Loop Detected\",\n  \"509\": \"Bandwidth Limit Exceeded\",\n  \"510\": \"Not Extended\",\n  \"511\": \"Network Authentication Required\"\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\statuses\\codes.json",
-        "start": 1,
-        "end": 65,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 65,
-          "column": 2,
-          "position": 442
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\http-errors\\node_modules\\statuses\\codes.json",
-        "start": 1,
-        "end": 65,
-        "startLoc": {
-          "line": 1,
-          "column": 1,
-          "position": 0
-        },
-        "endLoc": {
-          "line": 65,
-          "column": 2,
-          "position": 442
-        }
-      }
-    },
-    {
       "format": "markdown",
       "lines": 6,
       "fragment": "lgorithm] | <code>String</code> | <code>&quot;sha1&quot;</code> | Hash algorithm (sha1, sha256,   sha512). |\n| [options.key] | <code>String</code> |  | (DEPRECATED. Use `secret` instead.)   Shared secret key |\n\n<a name=\"hotp\"></a>\n### hotp(options) ⇒ ",
@@ -166228,288 +165496,288 @@
     {
       "format": "markdown",
       "lines": 7,
-      "fragment": "; update URLs\n- [Tests] clean up stringify tests slightly\n- [Docs] add note and links for coercing primitive values (#408)\n- [meta] fix README.md (#399)\n- [actions] backport actions from main\n- [Dev Deps] backport updates from main\n- [Refactor] `stringify`: reduce branching\n- [meta] do not publish workflow files\n\n## *",
+      "fragment": "odecov badges; update URLs\n- [Tests] clean up stringify tests slightly\n- [Docs] add note and links for coercing primitive values (#408)\n- [meta] fix README.md (#399)\n- [actions] backport actions from main\n- [Dev Deps] backport updates from main\n- [Refactor] `stringify`: reduce branching\n- [meta] do not publish workflo",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 192,
-        "end": 198,
+        "start": 201,
+        "end": 207,
         "startLoc": {
-          "line": 192,
+          "line": 201,
           "column": 1,
-          "position": 2518
+          "position": 2644
         },
         "endLoc": {
-          "line": 198,
+          "line": 207,
           "column": 6,
-          "position": 2624
+          "position": 2750
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 151,
-        "end": 157,
+        "start": 160,
+        "end": 166,
         "startLoc": {
-          "line": 151,
+          "line": 160,
           "column": 1,
-          "position": 1934
+          "position": 2060
         },
         "endLoc": {
-          "line": 157,
+          "line": 166,
           "column": 7,
-          "position": 2040
+          "position": 2166
         }
       }
     },
     {
       "format": "markdown",
       "lines": 6,
-      "fragment": "t`, `iconv-lite`, `tape`\n- [Tests] add tests for `depth=0` and `depth=false` behavior, both current and intuitive/intended (#326)\n- [Tests] use `eclint` instead of `editorconfig-tools`\n- [docs] readme: add security note\n- [meta] add github sponsorship\n- [meta] add FUNDING.yml\n- [meta] Clean up license text so it’s properly detected as BSD-3-Clause\n\n## **6.7.3**\n-",
+      "fragment": "publish-latest`, `iconv-lite`, `tape`\n- [Tests] add tests for `depth=0` and `depth=false` behavior, both current and intuitive/intended (#326)\n- [Tests] use `eclint` instead of `editorconfig-tools`\n- [docs] readme: add security note\n- [meta] add github sponsorship\n- [meta] add FUNDING.yml\n- [meta] Clean up license text so it’s properly detected as BSD-3-Clause\n\n#",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 223,
-        "end": 228,
+        "start": 232,
+        "end": 237,
         "startLoc": {
-          "line": 223,
+          "line": 232,
           "column": 1,
-          "position": 3037
+          "position": 3163
         },
         "endLoc": {
-          "line": 228,
+          "line": 237,
           "column": 7,
-          "position": 3140
+          "position": 3266
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 119,
-        "end": 124,
+        "start": 128,
+        "end": 133,
         "startLoc": {
-          "line": 119,
+          "line": 128,
           "column": 1,
-          "position": 1509
+          "position": 1635
         },
         "endLoc": {
-          "line": 124,
+          "line": 133,
           "column": 8,
-          "position": 1612
+          "position": 1738
         }
       }
     },
     {
       "format": "markdown",
       "lines": 6,
-      "fragment": "me] remove travis badge; add github actions/codecov badges; update URLs\n- [Docs] add note and links for coercing primitive values (#408)\n- [meta] fix README.md (#399)\n- [meta] do not publish workflow files\n- [actions] backport actions from main\n- [Dev Dep",
+      "fragment": "#427)\n- [readme] remove travis badge; add github actions/codecov badges; update URLs\n- [Docs] add note and links for coercing primitive values (#408)\n- [meta] fix README.md (#399)\n- [meta] do not publish workflow files\n- [actions] backport actions from ma",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 236,
-        "end": 241,
+        "start": 245,
+        "end": 250,
         "startLoc": {
-          "line": 236,
+          "line": 245,
           "column": 1,
-          "position": 3216
+          "position": 3342
         },
         "endLoc": {
-          "line": 241,
+          "line": 250,
           "column": 5,
-          "position": 3298
+          "position": 3424
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 151,
-        "end": 156,
+        "start": 160,
+        "end": 165,
         "startLoc": {
-          "line": 151,
+          "line": 160,
           "column": 1,
-          "position": 1934
+          "position": 2060
         },
         "endLoc": {
-          "line": 156,
+          "line": 165,
           "column": 6,
-          "position": 2016
+          "position": 2142
         }
       }
     },
     {
       "format": "markdown",
       "lines": 9,
-      "fragment": "0**\n- [New] `qs.stringify`: add `encodeValuesOnly` option\n- [Fix] follow `allowPrototypes` option during merge (#201, #201)\n- [Fix] support keys starting with brackets (#202, #200)\n- [Fix] chmod a-x\n- [Dev Deps] update `eslint`\n- [Tests] up to `node` `v7.7`, `v6.10`,` v4.8`; disable osx builds since they block linux builds\n- [eslint] reduce warnings\n\n## **6.3.3**\n- [Fix] `parse`: ignore `__proto__` keys (#428)\n- [Fix] fix for an impossible situation: when the formatter is called with a non-string value\n- [Fix] `utils.merge`: avoid a crash with a null target and an array source\n- [Fix] `utils.merge`: avoid a crash with a null target and a trut",
+      "fragment": "in\n\n## **6.4.0**\n- [New] `qs.stringify`: add `encodeValuesOnly` option\n- [Fix] follow `allowPrototypes` option during merge (#201, #201)\n- [Fix] support keys starting with brackets (#202, #200)\n- [Fix] chmod a-x\n- [Dev Deps] update `eslint`\n- [Tests] up to `node` `v7.7`, `v6.10`,` v4.8`; disable osx builds since they block linux builds\n- [eslint] reduce warnings\n\n## **6.3.3**\n- [Fix] `parse`: ignore `__proto__` keys (#428)\n- [Fix] fix for an impossible situation: when the formatter is called with a non-string value\n- [Fix] `utils.merge`: avoid a crash with a null target and an array source\n- [Fix] `utils.merge`: avoid a crash with a null targ",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 398,
-        "end": 406,
+        "start": 407,
+        "end": 415,
         "startLoc": {
-          "line": 398,
+          "line": 407,
           "column": 1,
-          "position": 6006
+          "position": 6132
         },
         "endLoc": {
-          "line": 406,
+          "line": 415,
           "column": 7,
-          "position": 6215
+          "position": 6341
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 369,
-        "end": 377,
+        "start": 378,
+        "end": 386,
         "startLoc": {
-          "line": 369,
+          "line": 378,
           "column": 1,
-          "position": 5523
+          "position": 5649
         },
         "endLoc": {
-          "line": 377,
+          "line": 386,
           "column": 9,
-          "position": 5732
+          "position": 5858
         }
       }
     },
     {
       "format": "markdown",
       "lines": 12,
-      "fragment": "\n- [Tests] Turn on eslint for test files (#175)\n\n## **6.2.4**\n- [Fix] `parse`: ignore `__proto__` keys (#428)\n- [Fix] `utils.merge`: avoid a crash with a null target and an array source\n- [Fix] `utils.merge`: avoid a crash with a null target and a truthy non-array source\n- [Fix] `utils`: `merge`: fix crash when `source` is a truthy primitive & no options are provided\n- [Fix] when `parseArrays` is false, properly handle key",
+      "fragment": "not available\n- [Tests] Turn on eslint for test files (#175)\n\n## **6.2.4**\n- [Fix] `parse`: ignore `__proto__` keys (#428)\n- [Fix] `utils.merge`: avoid a crash with a null target and an array source\n- [Fix] `utils.merge`: avoid a crash with a null target and a truthy non-array source\n- [Fix] `utils`: `merge`: fix crash when `source` is a truthy primitive & no options are provided\n- [Fix] when `parseArrays` is false, proper",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 456,
-        "end": 467,
+        "start": 465,
+        "end": 476,
         "startLoc": {
-          "line": 456,
+          "line": 465,
           "column": 1,
-          "position": 6980
+          "position": 7106
         },
         "endLoc": {
-          "line": 467,
+          "line": 476,
           "column": 6,
-          "position": 7112
+          "position": 7238
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 406,
-        "end": 417,
+        "start": 415,
+        "end": 426,
         "startLoc": {
-          "line": 406,
+          "line": 415,
           "column": 1,
-          "position": 6213
+          "position": 6339
         },
         "endLoc": {
-          "line": 417,
+          "line": 426,
           "column": 5,
-          "position": 6345
+          "position": 6471
         }
       }
     },
     {
       "format": "markdown",
       "lines": 9,
-      "fragment": "dle keys ending in `[]`\n- [Robustness] `stringify`: avoid relying on a global `undefined` (#427)\n- [Refactor] use cached `Array.isArray`\n- [Docs] Clarify the need for \"arrayLimit\" option\n- [meta] fix README.md (#399)\n- [meta] Clean up license text so it’s properly detect",
+      "fragment": " properly handle keys ending in `[]`\n- [Robustness] `stringify`: avoid relying on a global `undefined` (#427)\n- [Refactor] use cached `Array.isArray`\n- [Docs] Clarify the need for \"arrayLimit\" option\n- [meta] fix README.md (#399)\n- [meta] Clean up license text so it’s pr",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 467,
-        "end": 475,
+        "start": 476,
+        "end": 484,
         "startLoc": {
-          "line": 467,
+          "line": 476,
           "column": 1,
-          "position": 7110
+          "position": 7236
         },
         "endLoc": {
-          "line": 475,
+          "line": 484,
           "column": 2,
-          "position": 7196
+          "position": 7322
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 418,
-        "end": 423,
+        "start": 427,
+        "end": 432,
         "startLoc": {
-          "line": 418,
+          "line": 427,
           "column": 1,
-          "position": 6353
+          "position": 6479
         },
         "endLoc": {
-          "line": 423,
+          "line": 432,
           "column": 9,
-          "position": 6437
+          "position": 6563
         }
       }
     },
     {
       "format": "markdown",
       "lines": 10,
-      "fragment": " not ever shadow Object.prototype properties\n\n## **6.2.1**\n- [Fix] ensure `key[]=x&key[]&key[]=y` results in 3, not 2, values\n- [Refactor] Be explicit and use `Object.prototype.hasOwnProperty.call`\n- [Tests] remove `parallelshell` since it does not reliably report failures\n- [Tests] up to `node` `v6.3`, `v5.12`\n- [Dev Deps] update `tape`, `e",
+      "fragment": ": false` does not ever shadow Object.prototype properties\n\n## **6.2.1**\n- [Fix] ensure `key[]=x&key[]&key[]=y` results in 3, not 2, values\n- [Refactor] Be explicit and use `Object.prototype.hasOwnProperty.call`\n- [Tests] remove `parallelshell` since it does not reliably report failures\n- [Tests] up to `node` `v6.3`, `v5.12`\n- [Dev Deps] upda",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 487,
-        "end": 496,
+        "start": 496,
+        "end": 505,
         "startLoc": {
-          "line": 487,
+          "line": 496,
           "column": 1,
-          "position": 7350
+          "position": 7476
         },
         "endLoc": {
-          "line": 496,
+          "line": 505,
           "column": 6,
-          "position": 7456
+          "position": 7582
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 466,
-        "end": 475,
+        "start": 475,
+        "end": 484,
         "startLoc": {
-          "line": 466,
+          "line": 475,
           "column": 1,
-          "position": 7092
+          "position": 7218
         },
         "endLoc": {
-          "line": 475,
+          "line": 484,
           "column": 6,
-          "position": 7198
+          "position": 7324
         }
       }
     },
     {
       "format": "markdown",
       "lines": 8,
-      "fragment": "ctly (#161)\n- [New] add \"encoder\" and \"decoder\" options, for custom param encoding/decoding (#160)\n- [Fix] fix compacting of nested sparse arrays (#150)\n\n## **6.1.2**\n- [Fix] follow `allowPrototypes` option during merge (#201, #200)\n- [Fix] chmod a-x\n- [Fix] support keys starting with brackets (#202, #200)\n- [Tests] up to `node` `v7.7`, `v6.10`,` ",
+      "fragment": "/decoder directly (#161)\n- [New] add \"encoder\" and \"decoder\" options, for custom param encoding/decoding (#160)\n- [Fix] fix compacting of nested sparse arrays (#150)\n\n## **6.1.2**\n- [Fix] follow `allowPrototypes` option during merge (#201, #200)\n- [Fix] chmod a-x\n- [Fix] support keys starting with brackets (#202, #200)\n- [Tests] up to `node` `v7.7",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 501,
-        "end": 508,
+        "start": 510,
+        "end": 517,
         "startLoc": {
-          "line": 501,
+          "line": 510,
           "column": 1,
-          "position": 7520
+          "position": 7646
         },
         "endLoc": {
-          "line": 508,
+          "line": 517,
           "column": 8,
-          "position": 7626
+          "position": 7752
         }
       },
       "secondFile": {
         "name": "node_modules\\qs\\CHANGELOG.md",
-        "start": 466,
-        "end": 475,
+        "start": 475,
+        "end": 484,
         "startLoc": {
-          "line": 466,
+          "line": 475,
           "column": 1,
-          "position": 7092
+          "position": 7218
         },
         "endLoc": {
-          "line": 475,
+          "line": 484,
           "column": 7,
-          "position": 7200
+          "position": 7326
         }
       }
     },
@@ -171160,7 +170428,7 @@
     {
       "format": "json",
       "lines": 25,
-      "fragment": ",\n  \"description\": \"Implementation of JSON Web Signatures\",\n  \"main\": \"index.js\",\n  \"directories\": {\n    \"test\": \"test\"\n  },\n  \"scripts\": {\n    \"test\": \"make test\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"git://github.com/brianloveswords/node-jws.git\"\n  },\n  \"keywords\": [\n    \"jws\",\n    \"json\",\n    \"web\",\n    \"signatures\"\n  ],\n  \"author\": \"Brian J Brennan\",\n  \"license\": \"MIT\",\n  \"readmeFilename\": \"readme.md\",\n  \"gitHead\": \"c0f6b27bcea5a2ad2e304d91c2e842e4076a6b03\",\n  \"dependencies\": {\n    \"jwa\": \"^1.4.1\"",
+      "fragment": ",\n  \"description\": \"Implementation of JSON Web Signatures\",\n  \"main\": \"index.js\",\n  \"directories\": {\n    \"test\": \"test\"\n  },\n  \"scripts\": {\n    \"test\": \"make test\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"git://github.com/brianloveswords/node-jws.git\"\n  },\n  \"keywords\": [\n    \"jws\",\n    \"json\",\n    \"web\",\n    \"signatures\"\n  ],\n  \"author\": \"Brian J Brennan\",\n  \"license\": \"MIT\",\n  \"readmeFilename\": \"readme.md\",\n  \"gitHead\": \"c0f6b27bcea5a2ad2e304d91c2e842e4076a6b03\",\n  \"dependencies\": {\n    \"jwa\": \"^1.4.2\"",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\jws\\package.json",
@@ -171231,32 +170499,68 @@
     },
     {
       "format": "markdown",
-      "lines": 21,
-      "fragment": "is file.\n\n## [3.0.0]\n### Changed\n- **BREAKING**: `jwt.verify` now requires an `algorithm` parameter, and\n  `jws.createVerify` requires an `algorithm` option. The `\"alg\"` field\n  signature headers is ignored. This mitigates a critical security flaw\n  in the library which would allow an attacker to generate signatures with\n  arbitrary contents that would be accepted by `jwt.verify`. See\n  https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/\n  for details.\n\n## [2.0.0] - 2015-01-30\n### Changed\n- **BREAKING**: Default payload encoding changed from `binary` to\n  `utf8`. `utf8` is a is a more sensible default than `binary` because\n  many payloads, as far as I can tell, will contain user-facing\n  strings that could be in any language. (<code>[6b6de48]</code>)\n\n- Code reorganization, thanks [@fearphage]! (<code>[7880050]</code>)\n\n### Added\n- Option in all relevant methods for `encoding`. For those few users\n  that might be depending on a `bi",
+      "lines": 10,
+      "fragment": "Change Log\n\nAll notable changes to this project will be documented in this file.\n\n## [3.2.3]\n\n### Changed\n\n- Fix advisory GHSA-869p-cjfg-cm3x: createSign and createVerify now require\n  that a non empty secret is provided (via opts.secret, opts.privateKey or opts.key)\n  when using HMAC algorithms.\n",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\jws\\CHANGELOG.md",
-        "start": 6,
-        "end": 26,
+        "start": 3,
+        "end": 12,
         "startLoc": {
-          "line": 6,
+          "line": 3,
           "column": 1,
-          "position": 28
+          "position": 2
         },
         "endLoc": {
-          "line": 26,
-          "column": 2,
-          "position": 326
+          "line": 12,
+          "column": 7,
+          "position": 93
         }
       },
       "secondFile": {
         "name": "node_modules\\gtoken\\node_modules\\jws\\CHANGELOG.md",
-        "start": 27,
+        "start": 3,
+        "end": 12,
+        "startLoc": {
+          "line": 3,
+          "column": 1,
+          "position": 2
+        },
+        "endLoc": {
+          "line": 12,
+          "column": 7,
+          "position": 93
+        }
+      }
+    },
+    {
+      "format": "markdown",
+      "lines": 33,
+      "fragment": " file.\n\n## [3.2.3]\n\n### Changed\n\n- Fix advisory GHSA-869p-cjfg-cm3x: createSign and createVerify now require\n  that a non empty secret is provided (via opts.secret, opts.privateKey or opts.key)\n  when using HMAC algorithms.\n- Upgrading JWA version to 1.4.2, adressing a compatibility issue for Node >= 25.\n\n## [3.0.0]\n\n### Changed\n\n- **BREAKING**: `jwt.verify` now requires an `algorithm` parameter, and\n  `jws.createVerify` requires an `algorithm` option. The `\"alg\"` field\n  signature headers is ignored. This mitigates a critical security flaw\n  in the library which would allow an attacker to generate signatures with\n  arbitrary contents that would be accepted by `jwt.verify`. See\n  https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/\n  for details.\n\n## [2.0.0] - 2015-01-30\n\n### Changed\n\n- **BREAKING**: Default payload encoding changed from `binary` to\n  `utf8`. `utf8` is a is a more sensible default than `binary` because\n  many payloads, as far as I can tell, will contain user-facing\n  strings that could be in any language. (<code>[6b6de48]</code>)\n\n- Code reorganization, thanks [@fearphage]! (<code>[7880050]</code>)\n\n### Added\n\n- Option in all relevant methods for `encoding`. For those few users\n  that might ",
+      "tokens": 0,
+      "firstFile": {
+        "name": "node_modules\\jws\\CHANGELOG.md",
+        "start": 9,
+        "end": 41,
+        "startLoc": {
+          "line": 9,
+          "column": 1,
+          "position": 31
+        },
+        "endLoc": {
+          "line": 41,
+          "column": 2,
+          "position": 417
+        }
+      },
+      "secondFile": {
+        "name": "node_modules\\gtoken\\node_modules\\jws\\CHANGELOG.md",
+        "start": 18,
         "end": 50,
         "startLoc": {
-          "line": 27,
+          "line": 18,
           "column": 1,
-          "position": 201
+          "position": 116
         },
         "endLoc": {
           "line": 50,
@@ -175443,42 +174747,6 @@
     },
     {
       "format": "markdown",
-      "lines": 11,
-      "fragment": "e tracker](https://github.com/jshttp/cookie/issues)\nasking for the current contact information.\n\nTo ensure the timely response to your report, please ensure that the entirety\nof the report is contained within the email body and not solely behind a web\nlink or an attachment.\n\nAt least one owner will acknowledge your email within 48 hours, and will send a\nmore detailed response within 48 hours indicating the next steps in handling\nyour report. After the initial reply to your report, the owners will\nendeavor to keep you informed of the progress towards a fix and full\nannouncement,",
-      "tokens": 0,
-      "firstFile": {
-        "name": "node_modules\\cookie\\SECURITY.md",
-        "start": 15,
-        "end": 25,
-        "startLoc": {
-          "line": 15,
-          "column": 1,
-          "position": 157
-        },
-        "endLoc": {
-          "line": 25,
-          "column": 10,
-          "position": 355
-        }
-      },
-      "secondFile": {
-        "name": "node_modules\\raw-body\\SECURITY.md",
-        "start": 14,
-        "end": 24,
-        "startLoc": {
-          "line": 14,
-          "column": 1,
-          "position": 155
-        },
-        "endLoc": {
-          "line": 24,
-          "column": 10,
-          "position": 353
-        }
-      }
-    },
-    {
-      "format": "markdown",
       "lines": 7,
       "fragment": "number` (in seconds) to be the value for the [`Max-Age` `Set-Cookie` attribute][rfc-6265-5.2.2].\nThe given number will be converted to an integer by rounding down. By default, no maximum age is set.\n\n**note** the [cookie storage model specification][rfc-6265-5.3] states that if both `expires` and\n`maxAge` are set, t",
       "tokens": 0,
@@ -176631,253 +175899,253 @@
     },
     {
       "format": "markdown",
-      "lines": 18,
-      "fragment": " `body` object containing the parsed data is populated on the `request`\nobject after the middleware (i.e. `req.body`). This will be a `Buffer` object\nof the body.\n\n#### Options\n\nThe `raw` function takes an optional `options` object that may contain any of\nthe following keys:\n\n##### inflate\n\nWhen set to `true`, then deflated (compressed) bodies will be inflated; when\n`false`, deflated bodies are rejected. Defaults to `true`.\n\n##### limit\n\nControls the maximum request body size. If ",
+      "lines": 13,
+      "fragment": "\nobject after the middleware (i.e. `req.body`). This will be a `Buffer` object\nof the body.\n\n#### Options\n\nThe `raw` function takes an optional `options` object that may contain any of\nthe following keys:\n\n##### inflate\n\nWhen set to `true`, then deflated (compressed) bodies will be inflated; when\n`false`, deflated bodies are rejected. Defaults to `true`.\n\n##### limit\n\nControls the maximum re",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 132,
-        "end": 149,
+        "start": 142,
+        "end": 154,
         "startLoc": {
-          "line": 132,
-          "column": 2,
-          "position": 1232
+          "line": 142,
+          "column": 1,
+          "position": 1317
         },
         "endLoc": {
-          "line": 149,
+          "line": 154,
           "column": 7,
-          "position": 1389
+          "position": 1443
         }
       },
       "secondFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 76,
-        "end": 93,
+        "start": 86,
+        "end": 98,
         "startLoc": {
-          "line": 76,
-          "column": 2,
-          "position": 576
+          "line": 86,
+          "column": 1,
+          "position": 661
         },
         "endLoc": {
-          "line": 93,
+          "line": 98,
           "column": 10,
-          "position": 733
+          "position": 787
         }
       }
     },
     {
       "format": "markdown",
       "lines": 9,
-      "fragment": " body size. If this is a number, then the value\nspecifies the number of bytes; if it is a string, the value is passed to the\n[bytes](https://www.npmjs.com/package/bytes) library for parsing. Defaults\nto `'100kb'`.\n\n##### type\n\nThe `type` option is used to determine what media type the middleware will\nparse. This opt",
+      "fragment": " the maximum request body size. If this is a number, then the value\nspecifies the number of bytes; if it is a string, the value is passed to the\n[bytes](https://www.npmjs.com/package/bytes) library for parsing. Defaults\nto `'100kb'`.\n\n##### type\n\nThe `type` option is used to determine what media type the middleware ",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 145,
-        "end": 153,
+        "start": 150,
+        "end": 158,
         "startLoc": {
-          "line": 145,
+          "line": 150,
           "column": 10,
-          "position": 1382
+          "position": 1436
         },
         "endLoc": {
-          "line": 153,
+          "line": 158,
           "column": 6,
-          "position": 1481
+          "position": 1535
         }
       },
       "secondFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 100,
-        "end": 108,
+        "start": 105,
+        "end": 113,
         "startLoc": {
-          "line": 100,
+          "line": 105,
           "column": 7,
-          "position": 834
+          "position": 888
         },
         "endLoc": {
-          "line": 108,
+          "line": 113,
           "column": 7,
-          "position": 933
+          "position": 987
         }
       }
     },
     {
       "format": "markdown",
       "lines": 11,
-      "fragment": "ream`), or a mime type with a wildcard (like `*/*` or\n`application/*`). If a function, the `type` option is called as `fn(req)`\nand the request is parsed if it returns a truthy value. Defaults to\n`application/octet-stream`.\n\n##### verify\n\nThe `verify` option, if supplied, is called as `ve",
+      "fragment": "application/octet-stream`), or a mime type with a wildcard (like `*/*` or\n`application/*`). If a function, the `type` option is called as `fn(req)`\nand the request is parsed if it returns a truthy value. Defaults to\n`application/octet-stream`.\n\n##### verify\n\nThe `verify` option, if suppli",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 157,
-        "end": 167,
+        "start": 162,
+        "end": 172,
         "startLoc": {
-          "line": 157,
+          "line": 162,
           "column": 27,
-          "position": 1565
+          "position": 1619
         },
         "endLoc": {
-          "line": 167,
+          "line": 172,
           "column": 7,
-          "position": 1662
+          "position": 1716
         }
       },
       "secondFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 111,
-        "end": 121,
+        "start": 116,
+        "end": 126,
         "startLoc": {
-          "line": 111,
+          "line": 116,
           "column": 19,
-          "position": 1017
+          "position": 1071
         },
         "endLoc": {
-          "line": 121,
+          "line": 126,
           "column": 9,
-          "position": 1114
+          "position": 1168
         }
       }
     },
     {
       "format": "markdown",
-      "lines": 17,
-      "fragment": "y.\n\n#### Options\n\nThe `text` function takes an optional `options` object that may contain any of\nthe following keys:\n\n##### defaultCharset\n\nSpecify the default character set for the text content if the charset is not\nspecified in the `Content-Type` header of the request. Defaults to `utf-8`.\n\n##### inflate\n\nWhen set to `true`, then deflated (compressed) bodies will be inflated; when\n`false`, deflated bodies are rejected. Defaults to `true`.\n\n##### limit\n\nControls the maximum request body size. If this is a number, then the value\nspecifies the number of bytes; if it is a string, the value is passed to the\n[bytes](https://www.npmjs.com/package/bytes) library for parsing. Defaults\nto `'100k",
+      "lines": 22,
+      "fragment": "ing the parsed data is populated on the `request`\nobject after the middleware (i.e. `req.body`). This will be a string of the\nbody.\n\n#### Options\n\nThe `text` function takes an optional `options` object that may contain any of\nthe following keys:\n\n##### defaultCharset\n\nSpecify the default character set for the text content if the charset is not\nspecified in the `Content-Type` header of the request. Defaults to `utf-8`.\n\n##### inflate\n\nWhen set to `true`, then deflated (compressed) bodies will be inflated; when\n`false`, deflated bodies are rejected. Defaults to `true`.\n\n##### limit\n\nControls the maximum request body size. If this is a number, then the value\nspecifies the number of bytes; if it is a string, the value is passed to the\n[bytes](https://www.npmjs.com/package/bytes) library for parsing",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\body-parser\\README.md",
         "start": 188,
-        "end": 204,
+        "end": 209,
         "startLoc": {
           "line": 188,
-          "column": 1,
-          "position": 1863
+          "column": 2,
+          "position": 1879
         },
         "endLoc": {
-          "line": 204,
+          "line": 209,
           "column": 6,
-          "position": 2081
+          "position": 2135
         }
       },
       "secondFile": {
         "name": "node_modules\\body-parser\\README.md",
         "start": 81,
-        "end": 108,
+        "end": 113,
         "startLoc": {
           "line": 81,
-          "column": 1,
-          "position": 607
+          "column": 2,
+          "position": 623
         },
         "endLoc": {
-          "line": 108,
+          "line": 113,
           "column": 7,
-          "position": 933
+          "position": 987
         }
       }
     },
     {
       "format": "markdown",
       "lines": 11,
-      "fragment": "](https://www.npmjs.org/package/type-is#readme) library and this can\nbe an extension name (like `txt`), a mime type (like `text/plain`), or a mime\ntype with a wildcard (like `*/*` or `text/*`). If a function, the `type`\noption is called as `fn(req)` and the reques",
+      "fragment": "ctly to the\n[type-is](https://www.npmjs.com/package/type-is#readme) library and this can\nbe an extension name (like `txt`), a mime type (like `text/plain`), or a mime\ntype with a wildcard (like `*/*` or `text/*`). If a function, the `type`\noption is called as `fn(",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 207,
-        "end": 217,
+        "start": 212,
+        "end": 222,
         "startLoc": {
-          "line": 207,
+          "line": 212,
           "column": 13,
-          "position": 2165
+          "position": 2219
         },
         "endLoc": {
-          "line": 217,
+          "line": 222,
           "column": 5,
-          "position": 2252
+          "position": 2306
         }
       },
       "secondFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 111,
-        "end": 121,
+        "start": 116,
+        "end": 126,
         "startLoc": {
-          "line": 111,
+          "line": 116,
           "column": 19,
-          "position": 1017
+          "position": 1071
         },
         "endLoc": {
-          "line": 121,
+          "line": 126,
           "column": 7,
-          "position": 1104
+          "position": 1158
         }
       }
     },
     {
       "format": "markdown",
       "lines": 17,
-      "fragment": "\n\n#### Options\n\nThe `urlencoded` function takes an optional `options` object that may contain\nany of the following keys:\n\n##### extended\n\nThe \"extended\" syntax allows for rich objects and arrays to be encoded into the\nURL-encoded format, allowing for a JSON-like experience with URL-encoded. For\nmore information, please [see the qs\nlibrary](https://www.npmjs.org/package/qs#readme).\n\nDefaults to `false`.\n\n##",
+      "fragment": "xtended` is `true`).\n\n#### Options\n\nThe `urlencoded` function takes an optional `options` object that may contain\nany of the following keys:\n\n##### extended\n\nThe \"extended\" syntax allows for rich objects and arrays to be encoded into the\nURL-encoded format, allowing for a JSON-like experience with URL-encoded. For\nmore information, please [see the qs\nlibrary](https://www.npmjs.com/package/qs#readme).\n\nDefa",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 239,
-        "end": 255,
+        "start": 244,
+        "end": 260,
         "startLoc": {
-          "line": 239,
+          "line": 244,
           "column": 8,
-          "position": 2522
+          "position": 2581
         },
         "endLoc": {
-          "line": 255,
+          "line": 260,
           "column": 17,
-          "position": 2653
+          "position": 2712
         }
       },
       "secondFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 184,
-        "end": 93,
+        "start": 82,
+        "end": 98,
         "startLoc": {
-          "line": 184,
+          "line": 82,
           "column": 8,
-          "position": 1858
+          "position": 656
         },
         "endLoc": {
-          "line": 93,
+          "line": 98,
           "column": 10,
-          "position": 733
+          "position": 787
         }
       }
     },
     {
       "format": "markdown",
       "lines": 9,
-      "fragment": "If this is a number, then the value\nspecifies the number of bytes; if it is a string, the value is passed to the\n[bytes](https://www.npmjs.com/package/bytes) library for parsing. Defaults\nto `'100kb'`.\n\n##### parameterLimit\n\nThe `parameterLimit` option controls the maximum number of parameters that\nare allowed in the URL-e",
+      "fragment": " request body size. If this is a number, then the value\nspecifies the number of bytes; if it is a string, the value is passed to the\n[bytes](https://www.npmjs.com/package/bytes) library for parsing. Defaults\nto `'100kb'`.\n\n##### parameterLimit\n\nThe `parameterLimit` option controls the maximum number of parameters that\nare ",
       "tokens": 0,
       "firstFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 257,
-        "end": 265,
+        "start": 262,
+        "end": 270,
         "startLoc": {
-          "line": 257,
+          "line": 262,
           "column": 7,
-          "position": 2722
+          "position": 2781
         },
         "endLoc": {
-          "line": 265,
+          "line": 270,
           "column": 13,
-          "position": 2821
+          "position": 2880
         }
       },
       "secondFile": {
         "name": "node_modules\\body-parser\\README.md",
-        "start": 100,
-        "end": 108,
+        "start": 105,
+        "end": 113,
         "startLoc": {
-          "line": 100,
+          "line": 105,
           "column": 7,
-          "position": 834
+          "position": 888
         },
         "endLoc": {
-          "line": 108,
+          "line": 113,
           "column": 7,
-          "position": 933
+          "position": 987
         }
       }
     },
@@ -178286,6 +177554,42 @@
       }
     },
     {
+      "format": "json",
+      "lines": 6,
+      "fragment": "\u0000,\u0000\r\u0000\n\u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000\"\u0000s\u0000e\u0000v\u0000e\u0000r\u0000i\u0000t\u0000y\u0000\"\u0000:\u0000 \u0000\"\u0000h\u0000i\u0000g\u0000h\u0000\"\u0000,\u0000\r\u0000\n\u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000\"\u0000i\u0000s\u0000D\u0000i\u0000r\u0000e\u0000c\u0000t\u0000\"\u0000:\u0000 \u0000f\u0000a\u0000l\u0000s\u0000e\u0000,\u0000\r\u0000\n\u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000\"\u0000v\u0000i\u0000a\u0000\"\u0000:\u0000 \u0000[\u0000\r\u0000\n\u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000{\u0000\r\u0000\n\u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000 \u0000\"\u0000s\u0000o\u0000u\u0000r\u0000c\u0000e\u0000\"\u0000:\u0000 \u00001\u00001\u00001\u00001\u00007",
+      "tokens": 0,
+      "firstFile": {
+        "name": "diagnostics_20260109_100000\\npm_audit.json",
+        "start": 116,
+        "end": 121,
+        "startLoc": {
+          "line": 116,
+          "column": 8,
+          "position": 3098
+        },
+        "endLoc": {
+          "line": 121,
+          "column": 2,
+          "position": 3235
+        }
+      },
+      "secondFile": {
+        "name": "diagnostics_20260109_100000\\npm_audit.json",
+        "start": 69,
+        "end": 74,
+        "startLoc": {
+          "line": 69,
+          "column": 10,
+          "position": 1856
+        },
+        "endLoc": {
+          "line": 74,
+          "column": 2,
+          "position": 1993
+        }
+      }
+    },
+    {
       "format": "javascript",
       "lines": 10,
       "fragment": ";\n\n    if (!user_id && req.user) {\n      user_id = req.user.id;\n    }\n\n    if (!user_id || !id) {\n      return res\n        .status(400)\n        .json({ message: \"user_id and coin id are required\"",
@@ -178328,32 +177632,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "Controllers\\userController.js",
-        "start": 254,
-        "end": 263,
+        "start": 251,
+        "end": 260,
         "startLoc": {
-          "line": 254,
+          "line": 251,
           "column": 2,
-          "position": 2181
+          "position": 2176
         },
         "endLoc": {
-          "line": 263,
+          "line": 260,
           "column": 28,
-          "position": 2253
+          "position": 2248
         }
       },
       "secondFile": {
         "name": "Controllers\\userController.js",
-        "start": 184,
-        "end": 194,
+        "start": 181,
+        "end": 191,
         "startLoc": {
-          "line": 184,
+          "line": 181,
           "column": 11,
-          "position": 1639
+          "position": 1634
         },
         "endLoc": {
-          "line": 194,
+          "line": 191,
           "column": 31,
-          "position": 1712
+          "position": 1707
         }
       }
     },
@@ -178364,32 +177668,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "Controllers\\userController.js",
-        "start": 295,
-        "end": 308,
+        "start": 292,
+        "end": 305,
         "startLoc": {
-          "line": 295,
+          "line": 292,
           "column": 37,
-          "position": 2578
+          "position": 2573
         },
         "endLoc": {
-          "line": 308,
+          "line": 305,
           "column": 22,
-          "position": 2683
+          "position": 2678
         }
       },
       "secondFile": {
         "name": "Controllers\\userController.js",
-        "start": 194,
-        "end": 207,
+        "start": 191,
+        "end": 204,
         "startLoc": {
-          "line": 194,
+          "line": 191,
           "column": 31,
-          "position": 1713
+          "position": 1708
         },
         "endLoc": {
-          "line": 207,
+          "line": 204,
           "column": 21,
-          "position": 1818
+          "position": 1813
         }
       }
     },
@@ -178400,32 +177704,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "Controllers\\userController.js",
-        "start": 385,
-        "end": 395,
+        "start": 382,
+        "end": 392,
         "startLoc": {
-          "line": 385,
+          "line": 382,
           "column": 7,
-          "position": 3306
+          "position": 3301
         },
         "endLoc": {
-          "line": 395,
+          "line": 392,
           "column": 28,
-          "position": 3382
+          "position": 3377
         }
       },
       "secondFile": {
         "name": "Controllers\\userController.js",
-        "start": 253,
-        "end": 194,
+        "start": 250,
+        "end": 191,
         "startLoc": {
-          "line": 253,
+          "line": 250,
           "column": 30,
-          "position": 2177
+          "position": 2172
         },
         "endLoc": {
-          "line": 194,
+          "line": 191,
           "column": 31,
-          "position": 1712
+          "position": 1707
         }
       }
     },
@@ -178724,32 +178028,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "Controllers\\authController.js",
-        "start": 254,
-        "end": 261,
+        "start": 252,
+        "end": 259,
         "startLoc": {
-          "line": 254,
+          "line": 252,
           "column": 5,
-          "position": 2121
+          "position": 2117
         },
         "endLoc": {
-          "line": 261,
+          "line": 259,
           "column": 12,
-          "position": 2193
+          "position": 2189
         }
       },
       "secondFile": {
         "name": "Controllers\\authController.js",
-        "start": 203,
-        "end": 213,
+        "start": 201,
+        "end": 211,
         "startLoc": {
-          "line": 203,
+          "line": 201,
           "column": 2,
-          "position": 1672
+          "position": 1668
         },
         "endLoc": {
-          "line": 213,
+          "line": 211,
           "column": 8,
-          "position": 1747
+          "position": 1743
         }
       }
     },
@@ -178760,32 +178064,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "Controllers\\authController.js",
-        "start": 457,
-        "end": 468,
+        "start": 455,
+        "end": 466,
         "startLoc": {
-          "line": 457,
+          "line": 455,
           "column": 3,
-          "position": 3674
+          "position": 3670
         },
         "endLoc": {
-          "line": 468,
+          "line": 466,
           "column": 15,
-          "position": 3787
+          "position": 3783
         }
       },
       "secondFile": {
         "name": "Controllers\\authController.js",
-        "start": 186,
-        "end": 198,
+        "start": 184,
+        "end": 196,
         "startLoc": {
-          "line": 186,
+          "line": 184,
           "column": 3,
-          "position": 1492
+          "position": 1488
         },
         "endLoc": {
-          "line": 198,
+          "line": 196,
           "column": 4,
-          "position": 1606
+          "position": 1602
         }
       }
     },
@@ -178796,32 +178100,32 @@
       "tokens": 0,
       "firstFile": {
         "name": "Controllers\\authController.js",
-        "start": 469,
-        "end": 497,
+        "start": 467,
+        "end": 495,
         "startLoc": {
-          "line": 469,
+          "line": 467,
           "column": 3,
-          "position": 3790
+          "position": 3786
         },
         "endLoc": {
-          "line": 497,
+          "line": 495,
           "column": 7,
-          "position": 4015
+          "position": 4011
         }
       },
       "secondFile": {
         "name": "Controllers\\authController.js",
-        "start": 198,
-        "end": 226,
+        "start": 196,
+        "end": 224,
         "startLoc": {
-          "line": 198,
+          "line": 196,
           "column": 3,
-          "position": 1606
+          "position": 1602
         },
         "endLoc": {
-          "line": 226,
+          "line": 224,
           "column": 6,
-          "position": 1831
+          "position": 1827
         }
       }
     }

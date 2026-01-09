@@ -70,12 +70,9 @@ const updateUser = async (req, res) => {
 
       // HARD PROTECTION: Cannot modify the primary superadmin
       if (user.email === "nexchainsystem@gmail.com") {
-        return res
-          .status(403)
-          .json({
-            error:
-              "Action forbidden: Cannot modify System Super Admin account.",
-          });
+        return res.status(403).json({
+          error: "Action forbidden: Cannot modify System Super Admin account.",
+        });
       }
 
       // Logic check for Role updates
