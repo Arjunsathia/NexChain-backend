@@ -3,9 +3,9 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
-const path = require("path"); // ✅ For handling file paths
+const path = require("path"); 
 
-// ✅ Load environment variables BEFORE using them anywhere
+// Load environment config early to ensure variables are available
 dotenv.config();
 
 const fs = require("fs");
@@ -29,10 +29,10 @@ const coinRoutes = require("./Routes/coinRoutes");
 
 const app = express();
 
-// ✅ Connect to MongoDB Atlas
+// connection to MongoDB Atlas
 connectDB();
 
-// CORS setup
+// CORS configuration
 const corsOptions = {
   origin: process.env.CLIENT_URL,
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -44,10 +44,10 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 
-// ✅ EXPOSE UPLOADS FOLDER (Images won't load without this)
+// Serve the uploads directory statically for image access
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// Routes 
 app.use("/api/users", userRoutes);
 app.use("/api/watchlist", watchListRoutes);
 app.use("/api/purchases", purchaseRoutes);
@@ -62,7 +62,7 @@ app.use("/api/coins", coinRoutes);
 // Global Error Handler
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error("🔥 Error:", err.message);
+  console.error("Server Error:", err.message);
   res.status(500).json({
     success: false,
     message: err.message || "Internal Server Error",
@@ -71,5 +71,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

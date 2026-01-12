@@ -241,17 +241,17 @@ exports.getPlatformStats = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. Total Trades Today
+    // Total daily trade count
     const tradesToday = await Transaction.countDocuments({
       transactionDate: { $gte: today },
     });
 
-    // 2. Active Traders Today (Unique users who traded today)
+    // Unique users who have traded today
     const activeTraders = await Transaction.distinct("user_id", {
       transactionDate: { $gte: today },
     });
 
-    // 3. Platform Total Volume Today
+    // Calculate total platform volume for the day
     const volumeResult = await Transaction.aggregate([
       { $match: { transactionDate: { $gte: today } } },
       { $group: { _id: null, totalVolume: { $sum: "$totalValue" } } },
@@ -259,7 +259,7 @@ exports.getPlatformStats = async (req, res) => {
     const volumeToday =
       volumeResult.length > 0 ? volumeResult[0].totalVolume : 0;
 
-    // 4. Total Users Count (Overall)
+    // Total user count
     const totalUsers = await User.countDocuments({});
 
     res.json({

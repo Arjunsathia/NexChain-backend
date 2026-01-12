@@ -5,12 +5,12 @@ const User = require("../Models/userModel");
 const protect = (req, res, next) => {
   let token;
 
-  // ✅ Check for token in cookie
+  // Attempt to retrieve token from HTTP-only cookies
   if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
   }
 
-  // ✅ Check for Bearer token in Authorization header
+  // Fallback: Check for Bearer token in the Authorization header
   else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
@@ -51,7 +51,7 @@ const adminOnly = (req, res, next) => {
 };
 
 const requireAdmin2FA = async (req, res, next) => {
-  // 1. Must be admin first
+  // Ensure the user has administrative privileges first
   if (
     !req.user ||
     (req.user.role !== "admin" && req.user.role !== "superadmin")
@@ -59,7 +59,7 @@ const requireAdmin2FA = async (req, res, next) => {
     return res.status(403).json({ message: "Access denied: Admins only" });
   }
 
-  // 2. Check for 2FA code in Headers (X-Admin-2FA-Code)
+  // Retrieve the 2FA code from the request headers
   const code = req.headers["x-admin-2fa-code"];
 
   if (!code) {
@@ -70,7 +70,7 @@ const requireAdmin2FA = async (req, res, next) => {
   }
 
   try {
-    // 3. Verify Code
+    // Verify the provided TOTP code against the stored secret
     const user = await User.findOne({ id: req.user.id }).select(
       "+adminTotpSecret",
     );

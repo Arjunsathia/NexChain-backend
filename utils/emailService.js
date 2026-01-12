@@ -17,12 +17,13 @@ const transporter = nodemailer.createTransport({
 /**
  * Generic send email function
  */
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, attachments = []) => {
   const mailOptions = {
     from: `"NexChain Support" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
+    attachments, 
   };
 
   try {

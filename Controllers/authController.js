@@ -39,14 +39,14 @@ const register = asyncHandler(async (req, res) => {
     return;
   }
 
-  // Check if email exists (case-insensitive safe due to normalization)
+  // Ensure the email alias is not already in use by another account
   const existingEmail = await User.findOne({ email });
   if (existingEmail) {
     res.status(400).json({ message: "Email already in use" });
     return;
   }
 
-  // Check if username exists
+  // Ensure the requested username is available
   const existingUsername = await User.findOne({ user_name });
   if (existingUsername) {
     res.status(400).json({ message: "Username already taken" });
@@ -66,7 +66,7 @@ const register = asyncHandler(async (req, res) => {
     emailVerified: false,
   });
 
-  // Create and dispatch email verification OTP
+  // Generate a new OTP and send it via email for account verification
   const otp = generateOTP();
   const secret = process.env.OTP_SECRET || "nexchain_otp_secret_key";
   const otpHash = hashOTP(otp, secret);
@@ -162,7 +162,7 @@ const login = asyncHandler(async (req, res) => {
     return;
   }
 
-  // Check if user is frozen
+  // Prevent login if the user account has been frozen by an admin
   if (user.isFrozen) {
     res.status(403).json({
       message: "Your account has been frozen. Please contact support.",
@@ -180,7 +180,7 @@ const login = asyncHandler(async (req, res) => {
   user.lastLogin = new Date();
   await user.save();
 
-  // Issue tokens directly
+  // Issue access and refresh tokens for the session
   const accessToken = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET,
@@ -408,20 +408,20 @@ const googleLogin = asyncHandler(async (req, res) => {
   let user = await User.findOne({ email });
 
   if (user) {
-    // Block Admin from Google Login
+    // Prevent admins from logging in via Google; they must use password and 2FA
     if (user.role === "admin" || user.role === "superadmin") {
       res.status(403);
       throw new Error("Admins must login via password/2FA");
     }
 
-    // Check if frozen
+    // Check if the account is frozen
     if (user.isFrozen) {
       res.status(403);
       throw new Error("Your account has been frozen. Please contact support.");
     }
   } else {
     // Create User
-    // Generate a safe unique username
+    // Generate a unique, safe username based on the email address
     const baseName = email
       .split("@")[0]
       .toLowerCase()
@@ -443,11 +443,11 @@ const googleLogin = asyncHandler(async (req, res) => {
     });
   }
 
-  // Update login time
+  // Update last login timestamp
   user.lastLogin = new Date();
   await user.save();
 
-  // Generate Tokens
+  // Generate tokens for the authenticated session
   const accessToken = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET,

@@ -32,7 +32,7 @@ const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Get data from Frontend
+    // Extract user details from the request body
     const {
       name,
       email,
@@ -53,13 +53,13 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 2. Update Basic Info
+    // Update basic user information
     if (name) user.name = name;
     if (email) user.email = email;
     if (phone) user.phone = phone;
     if (user_name) user.user_name = user_name;
 
-    // 3. Admin Restricted Updates
+    // Handle administrative updates (Role changes and Account Status)
     if (
       req.user &&
       (req.user.role === "admin" || req.user.role === "superadmin")
@@ -68,23 +68,23 @@ const updateUser = async (req, res) => {
       const targetRole = user.role;
       const isSelf = req.user.id === user.id;
 
-      // HARD PROTECTION: Cannot modify the primary superadmin
+      // Security Check: Prevent modification of the primary system superadmin account
       if (user.email === "nexchainsystem@gmail.com") {
         return res.status(403).json({
           error: "Action forbidden: Cannot modify System Super Admin account.",
         });
       }
 
-      // Logic check for Role updates
+      // Validate role change permissions
       if (role && role !== targetRole) {
-        // Prevent Admin from promoting self (though UI shouldn't allow, API must block)
+        // Prevent admins from changing their own role
         if (isSelf)
           return res
             .status(403)
             .json({ error: "Cannot change your own role." });
 
         if (actorRole === "admin") {
-          // Admin can only toggle User <-> Admin
+          // Admins can only toggle User <-> Admin, they cannot touch Super Admins
           if (targetRole === "superadmin")
             return res
               .status(403)
@@ -107,7 +107,7 @@ const updateUser = async (req, res) => {
         user.role = role;
       }
 
-      // Logic check for Archive/Freeze updates
+      // Handle Account Status (Archive/Freeze)
       if (typeof isDeleted !== "undefined" || typeof isFrozen !== "undefined") {
         if (isSelf)
           return res
@@ -130,7 +130,7 @@ const updateUser = async (req, res) => {
       }
     }
 
-    // 4. Update Password
+    // Process password update if provided
     const pass = newPassword || req.body.newPassword;
     if (pass && pass.trim() !== "") {
       if (!currentPassword)
@@ -148,10 +148,10 @@ const updateUser = async (req, res) => {
       user.password = await bcrypt.hash(pass, 10);
     }
 
-    // 5. Save
+    // Persist changes to database
     await user.save();
 
-    // Audit Log
+    // Log this action for auditing purposes
     try {
       if (
         req.user &&
@@ -213,7 +213,7 @@ const deleteUser = async (req, res) => {
     const userToDelete = await User.findOne({ id });
     if (!userToDelete) return res.status(404).json({ error: "User not found" });
 
-    // Prevent deleting Super Admin (simplified check, ideal to check specific email or role hierarchy)
+    // Security Check: Protect Super Admin accounts from deletion
     if (
       userToDelete.role === "admin" &&
       userToDelete.email === "admin@nexchain.com"
@@ -225,21 +225,11 @@ const deleteUser = async (req, res) => {
     userToDelete.isDeleted = true;
     await userToDelete.save();
 
-    // Audit Log
+    // Log this action for auditing purposes
     try {
       if (req.user && req.user.role === "admin") {
-        // Need to find the admin user's _id to link in AuditLog if req.user.id is the string UUID
-        // But req.user usually comes from JWT, let's assume valid
-
-        // Fix: AuditLog expects ObjectId for adminId/targetId.
-        // If "id" in params is a UUID string, we must find the Mongo _id.
-        // userToDelete._id is available.
-        // req.user might have ._id if populating, or just .id from token.
-        // We might need to look up the admin's _id if AuditLog is strict on ObjectId ref.
-        // For now, let's try to pass what we have, but AuditLog schema says "type: mongoose.Schema.Types.ObjectId".
-        // So we must use _id.
-
-        const adminUser = await User.findOne({ id: req.user.id }); // Find admin's Mongo _id
+        // Find admin's Mongo _id to link in AuditLog
+        const adminUser = await User.findOne({ id: req.user.id });
 
         if (adminUser) {
           await AuditLog.create({
@@ -276,7 +266,7 @@ const updateProfileImage = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // If Cloudinary (URL), use path. If local (Disk), construct full URL.
+    // Determine image source (Cloudinary URL or Local Path)
     if (req.file.path && req.file.path.startsWith("http")) {
       user.image = req.file.path;
     } else {
@@ -328,7 +318,7 @@ const contactUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 1. Send Email
+    // Handle Email Communication
     if (type === "email") {
       if (!subject)
         return res.status(400).json({ error: "Subject required for emails" });
@@ -346,7 +336,7 @@ const contactUser = async (req, res) => {
       const sent = await sendEmail(targetUser.email, subject, emailHtml);
       if (!sent) return res.status(500).json({ error: "Failed to send email" });
 
-      // **User Requirement:** When email is sent successfully, also show a notification to check mail box.
+      // Notify user about the email
       await Notification.create({
         user: targetUser._id,
         title: "New Email from Support",
@@ -356,9 +346,9 @@ const contactUser = async (req, res) => {
       });
     }
 
-    // 2. Send Internal Message (Notification)
+    // Handle Internal Messaging
     else if (type === "internal") {
-      // **User Requirement:** Internal message shows in notification.
+      // Send internal notification
       await Notification.create({
         user: targetUser._id,
         title: "Message from Admin",
@@ -367,7 +357,7 @@ const contactUser = async (req, res) => {
       });
     }
 
-    // 3. Audit Log
+    // Log this action for auditing purposes
     try {
       if (req.user) {
         const adminUser = await User.findOne({ id: req.user.id });
@@ -396,6 +386,77 @@ const contactUser = async (req, res) => {
   }
 };
 
+const contactSupport = async (req, res) => {
+  try {
+    const { subject, message } = req.body;
+    // user contains the decoded token (likely just id, role, etc.)
+    // We need to fetch the full user details to get name and email
+    const user = await User.findOne({ id: req.user.id });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!subject || !message) {
+      return res.status(400).json({ error: "Subject and message are required" });
+    }
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="color: #4A90E2;">New Support Request</h2>
+        <p><strong>From:</strong> ${user.name} (${user.email})</p>
+        <p><strong>User Name:</strong> ${user.name}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <h3 style="color: #333;">Message:</h3>
+        <p style="white-space: pre-wrap;">${message}</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #888;">Sent from NexChain Platform</p>
+      </div>
+    `;
+
+    // Handle Attachments
+    let attachments = [];
+    if (req.file) {
+      attachments.push({
+        filename: req.file.originalname,
+        path: req.file.path, // Works for both Cloudinary URL and local path
+      });
+    }
+
+    // Send email to Super Admin
+    const sent = await sendEmail(
+      "nexchainsystem@gmail.com",
+      `Support Request: ${subject}`,
+      emailHtml,
+      attachments
+    );
+
+    if (!sent) {
+      return res.status(500).json({ error: "Failed to send email" });
+    }
+
+    // Notify the administration team
+    // Try to find superadmin first, else any admin
+    const adminUser = await User.findOne({ role: "superadmin" });
+    const targetAdmin = adminUser || (await User.findOne({ role: "admin" }));
+
+    if (targetAdmin) {
+      await Notification.create({
+        user: targetAdmin._id, // Must be ObjectId
+        title: "New Support Mail",
+        message: `${user.name} sent a mail: "${subject}"`,
+        type: "info",
+      });
+    }
+
+    res.json({ message: "Your support mail has been sent successfully." });
+  } catch (error) {
+    console.error("Contact Support Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const logoutUser = (req, res) => {
   res
     .clearCookie("token", {
@@ -414,4 +475,5 @@ module.exports = {
   deleteUser,
   logoutUser,
   contactUser,
+  contactSupport,
 };

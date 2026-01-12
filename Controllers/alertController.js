@@ -83,7 +83,6 @@ exports.checkAlerts = async (req, res) => {
         await alert.save();
         triggeredAlerts.push(alert);
 
-        // Create Notification
         const Notification = require("../Models/Notification");
         await Notification.create({
           user: user_id,

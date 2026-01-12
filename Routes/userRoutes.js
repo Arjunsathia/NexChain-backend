@@ -8,6 +8,7 @@ const {
   deleteUser,
   logoutUser,
   contactUser,
+  contactSupport,
 } = require("../Controllers/userController");
 const {
   protect,
@@ -35,6 +36,9 @@ router.delete("/:id", protect, adminOnly, requireAdmin2FA, deleteUser);
 
 // ✅ CONTACT USER ROUTE
 router.post("/contact-user", protect, adminOnly, contactUser);
+
+// ✅ CONTACT SUPPORT ROUTE (User -> Admin)
+router.post("/contact-support", protect, upload.single("attachment"), contactSupport);
 
 router.post("/logout", logoutUser);
 
