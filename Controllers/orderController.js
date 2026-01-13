@@ -1,7 +1,6 @@
 const Order = require("../Models/Order");
 const User = require("../Models/userModel");
 const PurchasedCoin = require("../Models/PurchasedCoin");
-const { executeBuy, executeSell } = require("../utils/transactionHelpers");
 
 // Create a new limit order
 exports.createOrder = async (req, res) => {
@@ -99,7 +98,10 @@ exports.createOrder = async (req, res) => {
 exports.getOpenOrders = async (req, res) => {
   try {
     const { user_id } = req.params;
-    const orders = await Order.find({ user_id, status: "pending" }).sort({
+    const orders = await Order.find({
+      user_id,
+      status: { $in: ["pending", "triggered"] },
+    }).sort({
       createdAt: -1,
     });
     res.json({ success: true, orders });
@@ -140,92 +142,125 @@ exports.cancelOrder = async (req, res) => {
   }
 };
 
-// Execute an order (triggered by price match)
-exports.executeOrder = async (req, res) => {
-  const { orderId, current_price } = req.body;
+// Update an existing order
+exports.updateOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { limit_price, stop_price, quantity } = req.body;
 
   try {
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ error: "Order not found" });
-    if (order.status !== "pending")
-      return res.status(400).json({ error: "Order already processed" });
-
-    // Verify Price Condition
-    let executed = false;
-
-    // STOP ORDER LOGIC
-    if (order.category === "stop_limit" || order.category === "stop_market") {
-      // Stop Buy: Trigger when price >= stop_price
-      // Stop Sell: Trigger when price <= stop_price
-      // (Standard Stop Loss behavior)
-
-      let stopHit = false;
-      if (order.type === "buy" && current_price >= order.stop_price)
-        stopHit = true;
-      if (order.type === "sell" && current_price <= order.stop_price)
-        stopHit = true;
-
-      if (stopHit) {
-        if (order.category === "stop_market") {
-          executed = true; // Execute immediately as market
-        } else {
-          // Convert to Limit Order
-          order.category = "limit";
-          await order.save();
-          return res.json({
-            success: true,
-            message: "Stop Limit Triggered - Order is now Limit",
-            order,
-          });
-        }
-      } else {
-        return res.status(400).json({ error: "Stop price not reached" });
-      }
-    }
-    // LIMIT ORDER LOGIC
-    else if (order.category === "limit") {
-      if (order.type === "buy" && current_price <= order.limit_price) {
-        executed = true;
-      } else if (order.type === "sell" && current_price >= order.limit_price) {
-        executed = true;
-      }
+    if (order.status !== "pending") {
+      return res.status(400).json({ error: "Only pending orders can be updated" });
     }
 
-    if (!executed) {
-      return res.status(400).json({ error: "Price condition not met" });
+    const user = await User.findOne({ id: order.user_id });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Determine new price for value calculation
+    let priceForCalc = limit_price !== undefined ? limit_price : order.limit_price;
+    if (order.category === "stop_market") {
+      priceForCalc = stop_price !== undefined ? stop_price : order.stop_price;
     }
+
+    const newQuantity = quantity !== undefined ? quantity : order.quantity;
+    const newTotalValue = priceForCalc * newQuantity;
+    const valueDifference = newTotalValue - order.total_value;
 
     if (order.type === "buy") {
-      await executeBuy(
-        order.user_id,
-        {
-          coinId: order.coin_id,
-          coinName: order.coin_name,
-          coinSymbol: order.coin_symbol,
-          image: order.coin_image,
-        },
-        order.quantity,
-        order.category === "stop_market" ? current_price : order.limit_price,
-        order.total_value,
-        0,
-        false, // Do not deduct balance (already locked)
-      );
+      // If order is now more expensive, check and deduct balance
+      if (valueDifference > 0) {
+        if (user.virtualBalance < valueDifference) {
+          return res.status(400).json({ error: "Insufficient balance for the update" });
+        }
+        user.virtualBalance -= valueDifference;
+      } else if (valueDifference < 0) {
+        // Refund the difference
+        user.virtualBalance += Math.abs(valueDifference);
+      }
+      await user.save();
     } else if (order.type === "sell") {
-      await executeSell(
-        order.user_id,
-        order.coin_id,
-        order.quantity,
-        order.category === "stop_market" ? current_price : order.limit_price,
-      );
+      // If quantity increased, check holdings
+      if (newQuantity > order.quantity) {
+        const purchases = await PurchasedCoin.find({ user_id: order.user_id, coin_id: order.coin_id });
+        const totalOwned = purchases.reduce((sum, p) => sum + p.quantity, 0);
+
+        const pendingOrders = await Order.find({
+          user_id: order.user_id,
+          coin_id: order.coin_id,
+          type: "sell",
+          status: "pending",
+          _id: { $ne: orderId } // Exclude current order
+        });
+        const lockedQuantity = pendingOrders.reduce((sum, o) => sum + (o.quantity - o.filled_quantity), 0);
+
+        if (totalOwned - lockedQuantity < newQuantity) {
+          return res.status(400).json({
+            error: "Insufficient available holdings for this quantity increase",
+          });
+        }
+      }
     }
 
-    order.status = "filled";
-    order.filled_quantity = order.quantity; // Fully filled for simplicity
+    // Update the order fields
+    if (limit_price !== undefined) order.limit_price = limit_price;
+    if (stop_price !== undefined) order.stop_price = stop_price;
+    if (quantity !== undefined) order.quantity = quantity;
+    order.total_value = newTotalValue;
+
     await order.save();
 
-    res.json({ success: true, message: "Order executed", order });
+    res.json({
+      success: true,
+      message: "Order updated successfully",
+      order,
+      newBalance: user.virtualBalance
+    });
   } catch (error) {
-    console.error("Execute Order Error:", error);
-    res.status(500).json({ error: "Failed to execute order" });
+    console.error("Update Order Error:", error);
+    res.status(500).json({ error: "Failed to update order" });
+  }
+};
+
+const { processOrderExecution } = require("../services/orderExecutionService");
+
+// Execute an order (triggered by price match or manual request)
+exports.executeOrder = async (req, res) => {
+  const { orderId } = req.body;
+  const tradingEngine = require("../services/tradingEngine");
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    
+    // Only allow processing if pending or triggered
+    if (order.status !== "pending" && order.status !== "triggered") {
+      return res.status(400).json({ error: "Order is not in an executable state" });
+    }
+
+    if (!order.coin_symbol) {
+      return res.status(400).json({ error: "Order is missing a coin symbol and cannot be processed" });
+    }
+    const symbol = order.coin_symbol.toLowerCase() + "usdt";
+    const priceData = tradingEngine.prices[symbol];
+
+    if (!priceData) {
+      return res.status(400).json({ error: "Market data currently unavailable for this asset" });
+    }
+
+    // Freshness check: 10 seconds
+    const isFresh = (Date.now() - priceData.timestamp) < 10000;
+    if (!isFresh) {
+      return res.status(400).json({ error: "System is waiting for fresh price data. Please try again in 2s." });
+    }
+
+    const currentPrice = priceData.price;
+    console.log(`🔍 [Manual Execution] ${order.coin_symbol} Order:${order._id} Price:${currentPrice} Limit:${order.limit_price}`);
+
+    const result = await processOrderExecution(order, currentPrice);
+    res.json(result);
+  } catch (error) {
+    console.error("Execute Order Error:", error.message);
+    res.status(500).json({ error: error.message || "Failed to execute order" });
   }
 };

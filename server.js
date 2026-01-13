@@ -14,6 +14,7 @@ if (!fs.existsSync("uploads")) {
 }
 
 const connectDB = require("./config/db");
+const tradingEngine = require("./services/tradingEngine");
 
 // Route imports
 const userRoutes = require("./Routes/userRoutes");
@@ -30,7 +31,10 @@ const coinRoutes = require("./Routes/coinRoutes");
 const app = express();
 
 // connection to MongoDB Atlas
-connectDB();
+connectDB().then(() => {
+  // Start the background trading engine
+  tradingEngine.start();
+});
 
 // CORS configuration
 const corsOptions = {
@@ -70,6 +74,10 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5050;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Initialize real-time socket updates
+const socketService = require("./services/socketService");
+socketService.init(server);

@@ -31,10 +31,7 @@ exports.buyCoin = async (req, res) => {
     coin_id,
     coin_name,
     coin_symbol,
-    coin_price_usd,
     quantity,
-    total_cost,
-    fees,
     image,
   } = req.body;
 
@@ -48,13 +45,49 @@ exports.buyCoin = async (req, res) => {
         .json({ error: "Account is frozen. Trading disabled." });
     }
 
+    // Server-Side Price Verification
+    const tradingEngine = require("../services/tradingEngine");
+    if (!coin_symbol) {
+      return res.status(400).json({ error: "Coin symbol is required for purchase" });
+    }
+    const symbol = coin_symbol.toLowerCase() + "usdt";
+
+    // Ensure we are tracking this symbol
+    tradingEngine.ensureTracking(symbol);
+
+    let priceData = tradingEngine.prices[symbol];
+
+    // Perfect UX: If data is missing (first time tracking), wait briefly for the first ticker message
+    if (!priceData) {
+      console.log(`⏳ [Purchase] Waiting for first ticker for ${symbol}...`);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      priceData = tradingEngine.prices[symbol];
+    }
+
+    if (!priceData) {
+      return res.status(400).json({
+        error: "Market data currently unavailable for this asset. Please try again in 1s.",
+      });
+    }
+
+    // Freshness check: 5 seconds for Market Orders
+    const isFresh = Date.now() - priceData.timestamp < 5000;
+    if (!isFresh) {
+      return res.status(400).json({
+        error: "Waiting for fresh price data. Please try again in 1s.",
+      });
+    }
+
+    const currentPrice = priceData.price;
+    const total_cost = currentPrice * quantity;
+
     const result = await executeBuy(
       user_id,
       { coinId: coin_id, coinName: coin_name, coinSymbol: coin_symbol, image },
       quantity,
-      coin_price_usd,
+      currentPrice,
       total_cost,
-      fees,
+      0, // fees
       true, // deductBalance
     );
 
@@ -87,7 +120,7 @@ exports.buyCoin = async (req, res) => {
 
 // POST /api/purchases/sell - Sell coins
 exports.sellCoin = async (req, res) => {
-  const { user_id, coin_id, quantity, current_price } = req.body;
+  const { user_id, coin_id, coin_symbol, quantity } = req.body;
 
   try {
     const user = await User.findOne({ id: user_id });
@@ -99,7 +132,42 @@ exports.sellCoin = async (req, res) => {
         .json({ error: "Account is frozen. Trading disabled." });
     }
 
-    const result = await executeSell(user_id, coin_id, quantity, current_price);
+    // Server-Side Price Verification
+    const tradingEngine = require("../services/tradingEngine");
+    if (!coin_symbol) {
+      return res.status(400).json({ error: "Coin symbol is required for sale" });
+    }
+    const symbol = coin_symbol.toLowerCase() + "usdt";
+
+    // Ensure we are tracking this symbol
+    tradingEngine.ensureTracking(symbol);
+
+    let priceData = tradingEngine.prices[symbol];
+
+    // Perfect UX: If data is missing (first time tracking), wait briefly
+    if (!priceData) {
+      console.log(`⏳ [Sale] Waiting for first ticker for ${symbol}...`);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      priceData = tradingEngine.prices[symbol];
+    }
+
+    if (!priceData) {
+      return res.status(400).json({
+        error: "Market data currently unavailable for this asset. Please try again in 1s.",
+      });
+    }
+
+    // Freshness check: 5 seconds
+    const isFresh = Date.now() - priceData.timestamp < 5000;
+    if (!isFresh) {
+      return res.status(400).json({
+        error: "Waiting for fresh price data. Please try again in 1s.",
+      });
+    }
+
+    const currentPrice = priceData.price;
+
+    const result = await executeSell(user_id, coin_id, quantity, currentPrice);
 
     res.json({
       success: true,
@@ -109,6 +177,7 @@ exports.sellCoin = async (req, res) => {
       quantitySold: quantity,
       deletedPurchases: result.deletedPurchases,
       updatedPurchases: result.updatedPurchases,
+      executionPrice: currentPrice,
     });
   } catch (error) {
     console.error("Error processing sale:", error);
