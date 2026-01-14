@@ -33,8 +33,6 @@ const processOrderExecution = async (order, current_price) => {
         order.status = "triggered";
         await order.save();
 
-        console.log(`[Order Service] 🔔 Triggered: ${order.type.toUpperCase()} ${order.coin_symbol} (Stop: ${order.stop_price})`);
-
         // Create persistent notification
         try {
           const userDoc = await User.findOne({ id: order.user_id });
@@ -85,11 +83,18 @@ const processOrderExecution = async (order, current_price) => {
 
   // 3. EXECUTION PHASE
   if (executed) {
-    console.log(`[Order Service] 💰 Executing: ${order.type.toUpperCase()} ${order.coin_symbol} (Price: ${current_price})`);
 
     if (order.type === "buy") {
       // Finance optimization: Execute at current_price if it's better than limit_price
-      const executionPrice = order.category === "stop_market" ? current_price : Math.min(order.limit_price || current_price, current_price);
+      // Ensure we strictly respect order.limit_price if it's set
+      let executionPrice;
+      if (order.category === "stop_market") {
+        executionPrice = current_price;
+      } else {
+        // If it's a limit order, we use the minimum of current price and limit price
+        // This ensures the user gets the best price but never worse than their limit
+        executionPrice = order.limit_price ? Math.min(order.limit_price, current_price) : current_price;
+      }
       const executionTotal = executionPrice * order.quantity;
       
       await executeBuy(
@@ -115,7 +120,6 @@ const processOrderExecution = async (order, current_price) => {
           if (userDoc) {
             userDoc.virtualBalance += refundAmount;
             await userDoc.save();
-            console.log(`[Order Service] 💸 Refunded: $${refundAmount.toFixed(4)} to user ${order.user_id}`);
           }
         } catch (refundErr) {
           console.error("[Order Service] ⚠️ Refund Error:", refundErr.message);
@@ -123,7 +127,13 @@ const processOrderExecution = async (order, current_price) => {
       }
     } else if (order.type === "sell") {
       // Finance optimization: Execute at current_price if it's better than limit_price
-      const executionPrice = order.category === "stop_market" ? current_price : Math.max(order.limit_price || current_price, current_price);
+      let executionPrice;
+      if (order.category === "stop_market") {
+        executionPrice = current_price;
+      } else {
+        // For sell limit, we use the maximum of current price and limit price
+        executionPrice = order.limit_price ? Math.max(order.limit_price, current_price) : current_price;
+      }
 
       await executeSell(
         order.user_id,
@@ -141,10 +151,13 @@ const processOrderExecution = async (order, current_price) => {
     try {
       const userDoc = await User.findOne({ id: order.user_id });
       if (userDoc) {
+        const isBetterPrice = order.type === "buy" ? current_price < order.limit_price : current_price > order.limit_price;
+        const priceLabel = isBetterPrice ? `at a better price of $${current_price.toLocaleString()} (Best Price Applied)` : `at $${current_price.toLocaleString()}`;
+
         await Notification.create({
           user: userDoc._id,
           title: "Order Filled",
-          message: `Your ${order.type.toUpperCase()} order for ${order.quantity} ${order.coin_symbol.toUpperCase()} was filled at $${current_price.toLocaleString()}. (Best Price Applied)`,
+          message: `Your ${order.type.toUpperCase()} order for ${order.quantity} ${order.coin_symbol.toUpperCase()} was filled ${priceLabel}.`,
           type: "success"
         });
       }

@@ -58,7 +58,6 @@ class TradingEngine {
         const added = [...currentSymbols].filter(s => !this.activeSymbols.has(s));
         const removed = [...this.activeSymbols].filter(s => !currentSymbols.has(s));
         
-        console.log(`[Trading Engine] 🔄 Syncing stream (+${added.length} / -${removed.length})`);
         this.activeSymbols = currentSymbols;
         this.connectWebSocket();
       }
@@ -71,7 +70,6 @@ class TradingEngine {
     if (!symbol) return;
     const s = symbol.toLowerCase();
     if (!this.activeSymbols.has(s)) {
-      console.log(`[Trading Engine] 📡 Adding dynamic tracking for: ${s}`);
       this.activeSymbols.add(s);
       this.connectWebSocket();
     }
@@ -93,7 +91,6 @@ class TradingEngine {
     this.ws = new WebSocket(url);
 
     this.ws.on("open", () => {
-      console.log(`[Trading Engine] 🌐 WebSocket Connected (${this.activeSymbols.size} symbols)`);
       this.reconnectAttempts = 0;
     });
 
@@ -152,9 +149,9 @@ class TradingEngine {
           if (result.success) {
             const coin = order.coin_symbol.toUpperCase();
             if (result.triggered) {
-              console.log(`[Trading Engine] 🔔 Triggered: ${coin} at $${currentPrice}`);
+              // Order status updated to triggered
             } else {
-              console.log(`[Trading Engine] 💰 Filled: ${order.type.toUpperCase()} ${coin} at $${currentPrice}`);
+              // Order filled
             }
           }
         } catch (error) {

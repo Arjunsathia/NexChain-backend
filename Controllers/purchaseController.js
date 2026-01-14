@@ -59,7 +59,6 @@ exports.buyCoin = async (req, res) => {
 
     // Perfect UX: If data is missing (first time tracking), wait briefly for the first ticker message
     if (!priceData) {
-      console.log(`⏳ [Purchase] Waiting for first ticker for ${symbol}...`);
       await new Promise(resolve => setTimeout(resolve, 1500));
       priceData = tradingEngine.prices[symbol];
     }
@@ -146,7 +145,6 @@ exports.sellCoin = async (req, res) => {
 
     // Perfect UX: If data is missing (first time tracking), wait briefly
     if (!priceData) {
-      console.log(`⏳ [Sale] Waiting for first ticker for ${symbol}...`);
       await new Promise(resolve => setTimeout(resolve, 1500));
       priceData = tradingEngine.prices[symbol];
     }

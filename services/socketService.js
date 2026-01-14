@@ -10,11 +10,9 @@ class SocketService {
     this.wss = new WebSocket.Server({ server });
 
     this.wss.on("connection", (ws) => {
-      console.log("📱 [Socket] Client connected");
       this.clientStates.set(ws, { isAlive: true });
 
       ws.on("close", () => {
-        console.log("📱 [Socket] Client disconnected");
         this.clientStates.delete(ws);
       });
 

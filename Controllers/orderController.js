@@ -255,7 +255,6 @@ exports.executeOrder = async (req, res) => {
     }
 
     const currentPrice = priceData.price;
-    console.log(`🔍 [Manual Execution] ${order.coin_symbol} Order:${order._id} Price:${currentPrice} Limit:${order.limit_price}`);
 
     const result = await processOrderExecution(order, currentPrice);
     res.json(result);
