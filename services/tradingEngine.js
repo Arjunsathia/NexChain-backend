@@ -55,8 +55,7 @@ class TradingEngine {
         [...currentSymbols].some(s => !this.activeSymbols.has(s));
 
       if (needsUpdate) {
-        const added = [...currentSymbols].filter(s => !this.activeSymbols.has(s));
-        const removed = [...this.activeSymbols].filter(s => !currentSymbols.has(s));
+
         
         this.activeSymbols = currentSymbols;
         this.connectWebSocket();
@@ -147,7 +146,6 @@ class TradingEngine {
         try {
           const result = await processOrderExecution(order, currentPrice);
           if (result.success) {
-            const coin = order.coin_symbol.toUpperCase();
             if (result.triggered) {
               // Order status updated to triggered
             } else {
