@@ -242,19 +242,11 @@ exports.executeOrder = async (req, res) => {
       return res.status(400).json({ error: "Order is missing a coin symbol and cannot be processed" });
     }
     const symbol = order.coin_symbol.toLowerCase() + "usdt";
-    const priceData = tradingEngine.prices[symbol];
+    const currentPrice = await tradingEngine.waitForPrice(symbol);
 
-    if (!priceData) {
+    if (!currentPrice) {
       return res.status(400).json({ error: "Market data currently unavailable for this asset" });
     }
-
-    // Freshness check: 10 seconds
-    const isFresh = (Date.now() - priceData.timestamp) < 10000;
-    if (!isFresh) {
-      return res.status(400).json({ error: "System is waiting for fresh price data. Please try again in 2s." });
-    }
-
-    const currentPrice = priceData.price;
 
     const result = await processOrderExecution(order, currentPrice);
     res.json(result);

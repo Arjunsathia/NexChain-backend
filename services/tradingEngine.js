@@ -1,7 +1,12 @@
 const WebSocket = require("ws");
+const https = require("https");
 const Order = require("../Models/Order");
 const { processOrderExecution } = require("./orderExecutionService");
 const cron = require("node-cron");
+
+// WebSocket ready states
+const WS_OPEN = 1;
+const WS_CLOSED = 3;
 
 const CORE_SYMBOLS = [
   "btcusdt", "ethusdt", "bnbusdt", "xrpusdt", "adausdt", "solusdt",
@@ -24,17 +29,24 @@ class TradingEngine {
     console.log("🚀 [Trading Engine] Initializing...");
     
     // 1. Initial subscription and DB sync
-    this.syncWithDatabase();
+    this.syncWithDatabase().catch(err => console.error("[Trading Engine] Startup Sync Error:", err.message));
 
-    // 2. Schedule regular DB syncs (check for new symbols every 30 seconds)
-    cron.schedule("*/30 * * * * *", () => {
-      this.syncWithDatabase();
+    // 2. Schedule regular DB syncs
+    cron.schedule("*/30 * * * * *", async () => {
+      try {
+        await this.syncWithDatabase();
+      } catch (err) {
+        console.error("[Trading Engine] Cron Sync Error:", err.message);
+      }
     });
 
-    // 3. Schedule order execution check every 5 seconds
-    // We check prices against orders periodically to avoid overwhelming the CPU on Every tick
-    cron.schedule("*/5 * * * * *", () => {
-      this.checkAndExecuteOrders();
+    // 3. Schedule order execution check
+    cron.schedule("*/5 * * * * *", async () => {
+      try {
+        await this.checkAndExecuteOrders();
+      } catch (err) {
+        console.error("[Trading Engine] Cron Execution Error:", err.message);
+      }
     });
 
     console.log("✅ [Trading Engine] Running.");
@@ -49,16 +61,29 @@ class TradingEngine {
       
       const currentSymbols = new Set([...CORE_SYMBOLS, ...orderSymbols]);
 
-      // Check if any symbols are DIFFERENT from what we currently track
-      const needsUpdate = 
-        currentSymbols.size !== this.activeSymbols.size || 
-        [...currentSymbols].some(s => !this.activeSymbols.has(s));
+      // Check if any NEW symbols need to be tracked
+      const newSymbols = [...currentSymbols].filter(s => !this.activeSymbols.has(s));
 
-      if (needsUpdate) {
-
+      if (newSymbols.length > 0) {
+        console.log(`[Trading Engine] ➕ Subscribing to ${newSymbols.length} new symbols...`);
+        newSymbols.forEach(s => this.activeSymbols.add(s));
         
-        this.activeSymbols = currentSymbols;
-        this.connectWebSocket();
+        // If WS is open, send SUBSCRIBE message instead of reconnecting
+        if (this.ws && this.ws.readyState === WS_OPEN) {
+          try {
+            const params = newSymbols.map(s => `${s}@ticker`);
+            this.ws.send(JSON.stringify({
+              method: "SUBSCRIBE",
+              params: params,
+              id: Date.now()
+            }));
+          } catch (sendErr) {
+            console.error("[Trading Engine] 📡 Subscription send failed:", sendErr.message);
+            this.connectWebSocket(); // Reconnect on failed send
+          }
+        } else {
+          this.connectWebSocket();
+        }
       }
     } catch (error) {
       console.error("[Trading Engine] ❌ Sync Error:", error.message);
@@ -69,9 +94,97 @@ class TradingEngine {
     if (!symbol) return;
     const s = symbol.toLowerCase();
     if (!this.activeSymbols.has(s)) {
+      console.log(`[Trading Engine] 🔍 Request to track ${s}`);
       this.activeSymbols.add(s);
-      this.connectWebSocket();
+      
+      if (this.ws && this.ws.readyState === WS_OPEN) {
+        try {
+          console.log(`[Trading Engine] 📡 Sending SUBSCRIBE for ${s}`);
+          this.ws.send(JSON.stringify({
+            method: "SUBSCRIBE",
+            params: [`${s}@ticker`],
+            id: Date.now()
+          }));
+        } catch (sendErr) {
+          console.error("[Trading Engine] 📡 Manual subscription send failed:", sendErr.message);
+          this.connectWebSocket();
+        }
+      } else if (!this.ws || this.ws.readyState === WS_CLOSED) {
+        this.connectWebSocket();
+      }
     }
+  }
+
+  /**
+   * Robust price retrieval with REST fallback
+   */
+  async getPrice(symbol) {
+    const s = symbol.toLowerCase();
+    
+    // 1. Try WebSocket cache (Freshness: 10s)
+    if (this.prices[s] && (Date.now() - this.prices[s].timestamp < 10000)) {
+      return this.prices[s].price;
+    }
+
+    // 2. Try REST API Fallback
+    console.log(`[Trading Engine] 🌐 Fetching REST fallback for ${s}`);
+    try {
+      const price = await this.fetchPriceREST(s);
+      if (price) {
+        this.prices[s] = { price, timestamp: Date.now() };
+        return price;
+      }
+    } catch (err) {
+      console.error(`[Trading Engine] ❌ REST Fallback Failed for ${s}:`, err.message);
+    }
+    return null;
+  }
+
+  /**
+   * Wait for a price to become available
+   */
+  async waitForPrice(symbol, maxWaitMs = 5000) {
+    const s = symbol.toLowerCase();
+    this.ensureTracking(s);
+
+    const start = Date.now();
+    while (Date.now() - start < maxWaitMs) {
+      const price = await this.getPrice(s);
+      if (price) return price;
+      
+      console.log(`[Trading Engine] ⏳ Waiting for ${s} price (${Math.round((Date.now() - start)/1000)}s)...`);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    
+    console.error(`[Trading Engine] ❌ Timeout waiting for ${s}`);
+    return null;
+  }
+
+  fetchPriceREST(symbol) {
+    return new Promise((resolve, reject) => {
+      const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`;
+      
+      https.get(url, { timeout: 3000 }, (res) => {
+        let data = "";
+        res.on("data", (chunk) => data += chunk);
+        res.on("end", () => {
+          try {
+            const body = JSON.parse(data);
+            if (body && body.price) {
+              resolve(parseFloat(body.price));
+            } else {
+              resolve(null);
+            }
+          } catch (e) { 
+            reject(new Error("Parse error")); 
+          }
+        });
+      }).on("error", (err) => {
+        reject(err);
+      }).on("timeout", () => {
+        reject(new Error("Timeout"));
+      });
+    });
   }
 
   connectWebSocket() {

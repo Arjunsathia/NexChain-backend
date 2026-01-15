@@ -55,31 +55,16 @@ exports.buyCoin = async (req, res) => {
     // Ensure we are tracking this symbol
     tradingEngine.ensureTracking(symbol);
 
-    let priceData = tradingEngine.prices[symbol];
+    // Use the robust waitForPrice instead of manual polling
+    const currentPrice = await tradingEngine.waitForPrice(symbol);
 
-    // Perfect UX: If data is missing (first time tracking), wait briefly for the first ticker message
-    if (!priceData) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      priceData = tradingEngine.prices[symbol];
-    }
-
-    if (!priceData) {
+    if (!currentPrice) {
       return res.status(400).json({
-        error: "Market data currently unavailable for this asset. Please try again in 1s.",
+        error: "Market data currently unavailable for this asset. Please try again.",
       });
     }
 
-    // Freshness check: 5 seconds for Market Orders
-    const isFresh = Date.now() - priceData.timestamp < 5000;
-    if (!isFresh) {
-      return res.status(400).json({
-        error: "Waiting for fresh price data. Please try again in 1s.",
-      });
-    }
-
-    const currentPrice = priceData.price;
     const total_cost = currentPrice * quantity;
-
     const result = await executeBuy(
       user_id,
       { coinId: coin_id, coinName: coin_name, coinSymbol: coin_symbol, image },
@@ -141,29 +126,14 @@ exports.sellCoin = async (req, res) => {
     // Ensure we are tracking this symbol
     tradingEngine.ensureTracking(symbol);
 
-    let priceData = tradingEngine.prices[symbol];
+    // Use robust waitForPrice
+    const currentPrice = await tradingEngine.waitForPrice(symbol);
 
-    // Perfect UX: If data is missing (first time tracking), wait briefly
-    if (!priceData) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      priceData = tradingEngine.prices[symbol];
-    }
-
-    if (!priceData) {
+    if (!currentPrice) {
       return res.status(400).json({
-        error: "Market data currently unavailable for this asset. Please try again in 1s.",
+        error: "Market data currently unavailable for this asset. Please try again.",
       });
     }
-
-    // Freshness check: 5 seconds
-    const isFresh = Date.now() - priceData.timestamp < 5000;
-    if (!isFresh) {
-      return res.status(400).json({
-        error: "Waiting for fresh price data. Please try again in 1s.",
-      });
-    }
-
-    const currentPrice = priceData.price;
 
     const result = await executeSell(user_id, coin_id, quantity, currentPrice);
 
