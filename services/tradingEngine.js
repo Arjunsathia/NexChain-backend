@@ -1,6 +1,7 @@
 const WebSocket = require("ws");
 const https = require("https");
 const Order = require("../Models/Order");
+const Alert = require("../Models/Alert");
 const { processOrderExecution } = require("./orderExecutionService");
 const cron = require("node-cron");
 
@@ -57,9 +58,14 @@ class TradingEngine {
       const orders = await Order.find({ status: { $in: ["pending", "triggered"] } });
       const orderSymbols = orders
         .filter(o => o.coin_symbol)
-        .map(o => o.coin_symbol.toLowerCase() + "usdt");
+        .map(o => o.coin_symbol.toLowerCase().endsWith("usdt") ? o.coin_symbol.toLowerCase() : o.coin_symbol.toLowerCase() + "usdt");
       
-      const currentSymbols = new Set([...CORE_SYMBOLS, ...orderSymbols]);
+      const alerts = await Alert.find({ status: "active" });
+      const alertSymbols = alerts
+        .filter(a => a.coin_symbol)
+        .map(a => a.coin_symbol.toLowerCase().endsWith("usdt") ? a.coin_symbol.toLowerCase() : a.coin_symbol.toLowerCase() + "usdt");
+
+      const currentSymbols = new Set([...CORE_SYMBOLS, ...orderSymbols, ...alertSymbols]);
 
       // Check if any NEW symbols need to be tracked
       const newSymbols = [...currentSymbols].filter(s => !this.activeSymbols.has(s));

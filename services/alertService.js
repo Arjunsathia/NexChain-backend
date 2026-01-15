@@ -29,8 +29,14 @@ class AlertService {
     try {
       // Find active alerts for this symbol
       // We search by coin_symbol (case insensitive usually, but storing lower case is best practice)
+      const lowerSymbol = symbol.toLowerCase();
+      const possibleSymbols = [lowerSymbol];
+      if (lowerSymbol.endsWith("usdt")) {
+          possibleSymbols.push(lowerSymbol.replace("usdt", ""));
+      }
+
       const alerts = await Alert.find({ 
-        coin_symbol: symbol.toLowerCase(), 
+        coin_symbol: { $in: possibleSymbols }, 
         status: "active" 
       });
 
