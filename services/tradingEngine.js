@@ -217,16 +217,22 @@ class TradingEngine {
       this.reconnectAttempts = 0;
     });
 
+      const alertService = require("./alertService"); // Lazy load or move to top
+
     this.ws.on("message", (data) => {
       try {
         const msg = JSON.parse(data.toString());
         if (msg.stream && msg.data) {
           const symbol = msg.data.s.toLowerCase();
           const price = parseFloat(msg.data.c);
+          
           this.prices[symbol] = {
             price,
             timestamp: Date.now()
           };
+
+          // CHECK ALERTS
+          alertService.processPriceUpdate(symbol, price);
         }
       } catch { /* silent */ }
     });

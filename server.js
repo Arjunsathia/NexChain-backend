@@ -6,7 +6,7 @@ const dotenv = require("dotenv");
 const path = require("path"); 
 
 // Load environment config early to ensure variables are available
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const fs = require("fs");
 if (!fs.existsSync("uploads")) {
