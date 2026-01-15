@@ -110,7 +110,10 @@ class TradingEngine {
           this.connectWebSocket();
         }
       } else if (!this.ws || this.ws.readyState === WS_CLOSED) {
+        // Only trigger connect if it's NOT currently connecting
         this.connectWebSocket();
+      } else if (this.ws.readyState === 0) { // CONNECTING
+        console.log(`[Trading Engine] ⏳ Socket connecting... ${s} will be tracked once open.`);
       }
     }
   }
@@ -121,8 +124,11 @@ class TradingEngine {
   async getPrice(symbol) {
     const s = symbol.toLowerCase();
     
+    // 0. Special Case: USDT/USDT (Tether is always 1.0)
+    if (s === "usdtusdt") return 1.0;
+
     // 1. Try WebSocket cache (Freshness: 10s)
-    if (this.prices[s] && (Date.now() - this.prices[s].timestamp < 10000)) {
+    if (this.prices[s] && (Date.now() - this.prices[s].timestamp < 60000)) {
       return this.prices[s].price;
     }
 
@@ -133,6 +139,8 @@ class TradingEngine {
       if (price) {
         this.prices[s] = { price, timestamp: Date.now() };
         return price;
+      } else {
+        console.warn(`[Trading Engine] ⚠️ Binance REST returned null for ${s} (Invalid symbol?)`);
       }
     } catch (err) {
       console.error(`[Trading Engine] ❌ REST Fallback Failed for ${s}:`, err.message);
@@ -153,7 +161,7 @@ class TradingEngine {
       if (price) return price;
       
       console.log(`[Trading Engine] ⏳ Waiting for ${s} price (${Math.round((Date.now() - start)/1000)}s)...`);
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 200));
     }
     
     console.error(`[Trading Engine] ❌ Timeout waiting for ${s}`);
@@ -164,7 +172,7 @@ class TradingEngine {
     return new Promise((resolve, reject) => {
       const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`;
       
-      https.get(url, { timeout: 3000 }, (res) => {
+      https.get(url, { timeout: 1500 }, (res) => {
         let data = "";
         res.on("data", (chunk) => data += chunk);
         res.on("end", () => {
@@ -189,7 +197,10 @@ class TradingEngine {
 
   connectWebSocket() {
     if (this.ws) {
-      // Clean cleanup: remove listeners before terminating to avoid "close" firing during manual restart
+      // If already open or connecting, don't start a second one
+      if (this.ws.readyState === 0 || this.ws.readyState === 1) {
+        return;
+      }
       this.ws.removeAllListeners();
       this.ws.terminate();
       this.ws = null;

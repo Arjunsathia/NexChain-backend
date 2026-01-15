@@ -79,3 +79,20 @@ exports.unfreezeCoin = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Warm up cache for a coin (Public)
+// @route   POST /api/coins/track
+// @access  Public
+exports.trackCoin = async (req, res) => {
+  const { symbol } = req.body;
+  if (!symbol) return res.status(400).json({ success: false });
+
+  try {
+    const tradingEngine = require("../services/tradingEngine");
+    tradingEngine.ensureTracking(symbol + "usdt");
+    res.json({ success: true, message: "Tracking started" });
+  } catch (error) {
+    // Silent fail ok
+    res.json({ success: false });
+  }
+};
