@@ -36,6 +36,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["pending", "filled", "cancelled", "triggered"],
       default: "pending",
+      index: true,
     },
     limit_price: {
       type: Number,
@@ -60,5 +61,8 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// Compound index for the most frequent Trading Engine query
+orderSchema.index({ status: 1, coin_symbol: 1 });
 
 module.exports = mongoose.model("Order", orderSchema);

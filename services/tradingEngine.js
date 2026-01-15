@@ -139,17 +139,18 @@ class TradingEngine {
     }
 
     // 2. Try REST API Fallback
-    console.log(`[Trading Engine] 🌐 Fetching REST fallback for ${s}`);
+    // 2. Try REST API Fallback
+    // console.debug(`[Trading Engine] 🌐 Fetching REST fallback for ${s}`); 
     try {
       const price = await this.fetchPriceREST(s);
       if (price) {
         this.prices[s] = { price, timestamp: Date.now() };
         return price;
       } else {
-        console.warn(`[Trading Engine] ⚠️ Binance REST returned null for ${s} (Invalid symbol?)`);
+        // console.warn(`[Trading Engine] ⚠️ Binance REST returned null for ${s}`);
       }
     } catch (err) {
-      console.error(`[Trading Engine] ❌ REST Fallback Failed for ${s}:`, err.message);
+      // console.error(`[Trading Engine] ❌ REST Fallback Failed for ${s}:`, err.message);
     }
     return null;
   }
@@ -264,40 +265,45 @@ class TradingEngine {
     this.isProcessing = true;
 
     try {
-      const activeOrders = await Order.find({ status: { $in: ["pending", "triggered"] } });
+      // Find orders that are pending or triggered (waiting for price match)
+      // Limit to 100 to prevent memory bloating per tick if backlog grows
+      const activeOrders = await Order.find({ status: { $in: ["pending", "triggered"] } }).limit(100);
       
-      for (const order of activeOrders) {
-        if (!order.coin_symbol) continue;
-        const symbol = order.coin_symbol.toLowerCase() + "usdt";
-        const priceData = this.prices[symbol];
-
-        if (!priceData) continue;
-
-        // Freshness check: 20 seconds (flexible for production network variance)
-        const isFresh = (Date.now() - priceData.timestamp) < 20000;
-        if (!isFresh) continue;
-
-        const currentPrice = priceData.price;
-
-        try {
-          const result = await processOrderExecution(order, currentPrice);
-          if (result.success) {
-            if (result.triggered) {
-              // Order status updated to triggered
-            } else {
-              // Order filled
-            }
-          }
-        } catch (error) {
-          if (error.message !== "Price condition not met" && error.message !== "Stop price not reached") {
-            console.error(`[Trading Engine] ❌ Execution Error (${order._id}):`, error.message);
-          }
-        }
+      // Process in chunks of 10 to avoid overwhelming DB/Event Loop but faster than sequential
+      const CHUNK_SIZE = 10;
+      for (let i = 0; i < activeOrders.length; i += CHUNK_SIZE) {
+        const chunk = activeOrders.slice(i, i + CHUNK_SIZE);
+        await Promise.all(chunk.map(order => this.processSingleOrder(order)));
       }
+
     } catch (error) {
       console.error("[Trading Engine] ❌ Loop Error:", error.message);
     } finally {
       this.isProcessing = false;
+    }
+  }
+
+  async processSingleOrder(order) {
+    if (!order.coin_symbol) return;
+    const symbol = order.coin_symbol.toLowerCase() + "usdt";
+    const priceData = this.prices[symbol];
+
+    if (!priceData) return;
+
+    // Freshness check: 20 seconds
+    const isFresh = (Date.now() - priceData.timestamp) < 20000;
+    if (!isFresh) return;
+
+    const currentPrice = priceData.price;
+
+    try {
+      // processOrderExecution is now robust but we catch internal errors here to not stop the loop
+      await processOrderExecution(order, currentPrice);
+    } catch (error) {
+      // Ignore common non-errors
+      if (error.message !== "Price condition not met" && error.message !== "Stop price not reached") {
+        console.error(`[Trading Engine] ❌ Execution Error (${order._id}):`, error.message);
+      }
     }
   }
 }

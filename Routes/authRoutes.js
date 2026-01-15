@@ -20,9 +20,18 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per windowMs
+  message: { message: "Too many login attempts, please try again after 15 minutes" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post("/register", register);
 router.post("/verify-email-otp", otpLimiter, verifyEmailOTP);
-router.post("/login", login);
+router.post("/login", loginLimiter, login);
 router.post("/google", googleLogin);
 router.post("/refresh", refresh);
 router.get("/setup-totp", protect, setupTOTP);
