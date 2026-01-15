@@ -175,28 +175,52 @@ class TradingEngine {
     return null;
   }
 
-  fetchPriceREST(symbol) {
+  async fetchPriceREST(symbol) {
+    const s = symbol.toUpperCase();
+    // Try multiple endpoints to handle region-blocking (e.g. Render US servers blocked by Global Binance)
+    const endpoints = [
+      `https://api.binance.com/api/v3/ticker/price?symbol=${s}`,
+      `https://api.binance.us/api/v3/ticker/price?symbol=${s}`,
+      `https://data-api.binance.vision/api/v3/ticker/price?symbol=${s}`
+    ];
+
+    for (const url of endpoints) {
+      try {
+        const price = await this._performRequest(url);
+        if (price) return price;
+      } catch (err) {
+        // Continue to next endpoint if this one fails
+      }
+    }
+    return null;
+  }
+
+  _performRequest(url) {
     return new Promise((resolve, reject) => {
-      const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`;
-      
-      https.get(url, { timeout: 1500 }, (res) => {
+      const req = https.get(url, { timeout: 2500 }, (res) => {
         let data = "";
         res.on("data", (chunk) => data += chunk);
         res.on("end", () => {
           try {
+            if (res.statusCode !== 200) {
+              reject(new Error(`Status ${res.statusCode}`));
+              return;
+            }
             const body = JSON.parse(data);
             if (body && body.price) {
               resolve(parseFloat(body.price));
             } else {
               resolve(null);
             }
-          } catch (e) { 
-            reject(new Error("Parse error")); 
+          } catch (e) {
+            reject(new Error("Parse error"));
           }
         });
-      }).on("error", (err) => {
-        reject(err);
-      }).on("timeout", () => {
+      });
+      
+      req.on("error", (err) => reject(err));
+      req.on("timeout", () => {
+        req.destroy();
         reject(new Error("Timeout"));
       });
     });
