@@ -101,7 +101,7 @@ class TradingEngine {
     const s = symbol.toLowerCase();
     if (!this.activeSymbols.has(s)) {
       console.log(`[Trading Engine] 🔍 Request to track ${s}`);
-      this.activeSymbols.add(s);
+      this.activeSymbols.add(s) ;
       
       if (this.ws && this.ws.readyState === WS_OPEN) {
         try {
