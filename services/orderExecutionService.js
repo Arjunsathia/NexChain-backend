@@ -25,6 +25,18 @@ const processOrderExecution = async (order, current_price) => {
     if (order.type === "sell" && current_price <= order.stop_price) stopHit = true;
 
     if (stopHit) {
+      // HANDLE OCO SIBLING CANCELLATION (If this stop leg triggers, we usually KEEP the other leg until this one FILLS, 
+      // OR we cancel the other leg immediately?
+      // Standard OCO: 
+      // - If Stop Triggered -> It becomes a Limit/Market Order. The OCO link usually remains until FILL.
+      // - BUT commonly: If Stop Limit is triggered, the Limit (TP) leg remains active until the Stop Limit actually FILLS? 
+      //   Actually no, usually one CANCELS the other immediately upon "activation" or "fill". 
+      //   Binance: "When one of them is executed, the other one is automatically canceled."
+      //   If Stop Limit is triggered, it places a limit order. Does the TP limit order disappear? 
+      //   Usually: NO. They coexist until one FILLS. 
+      //   However, for Stop-Market, it executes immediately.
+      //   To simplify: We will cancel sibling ONLY ON FILL.
+
       if (order.category === "stop_market") {
         executed = true; // Execute immediately as market price
       } else {
@@ -41,7 +53,8 @@ const processOrderExecution = async (order, current_price) => {
               user: userDoc._id,
               title: "Stop Order Triggered",
               message: `The stop price for your ${order.coin_symbol.toUpperCase()} order was hit. Your limit order is now active at $${order.limit_price.toLocaleString()}.`,
-              type: "info"
+              type: "info",
+              category: order.category
             });
           }
         } catch (notifyError) {
@@ -64,7 +77,14 @@ const processOrderExecution = async (order, current_price) => {
         };
       }
     } else {
-      // Not triggered yet - this is expected in frequent polling
+      // If we are here, stop logic didn't hit.
+      // But wait! If this is an OCO Stop Leg, and the price is moving AWAY from stop,
+      // it might be hitting the LIMIT (TP) leg. That is handled by the "LIMIT ORDER LOGIC" below 
+      // (which is entered if category == limit).
+      // Since this order is 'stop_xyz', we just return here.
+      // The sibling Limit Order (if OCO) is a SEPARATE order document processed separately in the loop.
+      
+      // Not triggered yet
       throw new Error("Stop price not reached");
     }
   }
@@ -147,6 +167,32 @@ const processOrderExecution = async (order, current_price) => {
     order.filled_quantity = order.quantity;
     await order.save();
 
+    // ---------------------------------------------------------
+    // OCO CANCELLATION LOGIC
+    // ---------------------------------------------------------
+    if (order.oco_group_id) {
+       const OrderModel = require("../Models/Order"); // Lazy load to avoid circular deps if any
+       // Find sibling order
+       const sibling = await OrderModel.findOne({ 
+         oco_group_id: order.oco_group_id, 
+         _id: { $ne: order._id },
+         status: { $in: ["pending", "triggered"] }
+       });
+
+       if (sibling) {
+         sibling.status = "cancelled";
+         await sibling.save();
+         console.log(`[Order Service] 🔗 OCO: Order ${order._id} filled. Cancelled sibling ${sibling._id}`);
+         
+         // Notify user of cancellation
+         socketService.sendToUser(order.user_id, "ORDER_CANCELLED", {
+           orderId: sibling._id,
+           reason: "OCO_FILLED"
+         });
+       }
+    }
+    // ---------------------------------------------------------
+
     // Create persistent notification in DB
     try {
       const userDoc = await User.findOne({ id: order.user_id });
@@ -158,7 +204,8 @@ const processOrderExecution = async (order, current_price) => {
           user: userDoc._id,
           title: "Order Filled",
           message: `Your ${order.type.toUpperCase()} order for ${order.quantity} ${order.coin_symbol.toUpperCase()} was filled ${priceLabel}.`,
-          type: "success"
+          type: "success",
+          category: order.category
         });
       }
     } catch (notifyError) {

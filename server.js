@@ -27,6 +27,8 @@ const kycRoutes = require("./Routes/kycRoutes");
 const notificationRoutes = require("./Routes/notificationRoutes");
 const authRoutes = require("./Routes/authRoutes");
 const coinRoutes = require("./Routes/coinRoutes");
+const newsRoutes = require("./Routes/newsRoutes");
+
 
 const app = express();
 
@@ -62,6 +64,8 @@ app.use("/api/kyc", kycRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/coins", coinRoutes);
+app.use("/api/news", newsRoutes);
+
 
 // Global Error Handler
 // eslint-disable-next-line no-unused-vars

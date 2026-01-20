@@ -58,6 +58,10 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    oco_group_id: {
+      type: String, // ID to link OCO pairs
+      index: true,
+    },
   },
   { timestamps: true },
 );

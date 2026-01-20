@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   createOrder,
+  createOCOOrder,
   getOpenOrders,
   cancelOrder,
   updateOrder,
@@ -10,6 +11,7 @@ const {
 const { protect } = require("../middleware/authMiddleware");
 
 router.post("/create", protect, createOrder);
+router.post("/create-oco", protect, createOCOOrder);
 router.post("/execute", protect, executeOrder);
 router.get("/:user_id", protect, getOpenOrders);
 router.put("/cancel/:orderId", protect, cancelOrder);
