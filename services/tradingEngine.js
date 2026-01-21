@@ -149,7 +149,7 @@ class TradingEngine {
       } else {
         // console.warn(`[Trading Engine] ⚠️ Binance REST returned null for ${s}`);
       }
-    } catch (err) {
+    } catch {
       // console.error(`[Trading Engine] ❌ REST Fallback Failed for ${s}:`, err.message);
     }
     return null;
@@ -188,7 +188,7 @@ class TradingEngine {
       try {
         const price = await this._performRequest(url);
         if (price) return price;
-      } catch (err) {
+      } catch {
         // Continue to next endpoint if this one fails
       }
     }
@@ -212,7 +212,7 @@ class TradingEngine {
             } else {
               resolve(null);
             }
-          } catch (e) {
+          } catch {
             reject(new Error("Parse error"));
           }
         });
