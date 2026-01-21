@@ -91,7 +91,7 @@ exports.trackCoin = async (req, res) => {
     const tradingEngine = require("../services/tradingEngine");
     tradingEngine.ensureTracking(symbol + "usdt");
     res.json({ success: true, message: "Tracking started" });
-  } catch (error) {
+  } catch {
     // Silent fail ok
     res.json({ success: false });
   }

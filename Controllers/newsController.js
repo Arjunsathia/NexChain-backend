@@ -1,4 +1,5 @@
-const axios = require("axios");
+// @ts-ignore
+const axios = require("axios").default;
 
 let cachedNews = null;
 let lastFetchTime = 0;
@@ -15,9 +16,15 @@ const getLiveNews = async (req, res) => {
 
     // Fetch from CryptoCompare API (Free, Public)
     const response = await axios.get(
-      "https://min-api.cryptocompare.com/data/v2/news/?lang=EN"
+      "https://min-api.cryptocompare.com/data/v2/news/?lang=EN",
+      {
+        headers: {
+            // Add User-Agent to prevent 403 blocking by some APIs
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      }
     );
-
+    
     if (response.data && response.data.Data) {
       cachedNews = response.data.Data;
       lastFetchTime = currentTime;

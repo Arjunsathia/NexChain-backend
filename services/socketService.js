@@ -43,7 +43,7 @@ class SocketService {
 
         // 3. Store User ID
         this.clientStates.set(ws, { isAlive: true, userId: decoded.id });
-      } catch (err) {
+      } catch {
         ws.close(1008, "Invalid Token");
         return;
       }
