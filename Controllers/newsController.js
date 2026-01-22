@@ -14,7 +14,6 @@ const getLiveNews = async (req, res) => {
       return res.status(200).json(cachedNews);
     }
 
-    // Fetch from CryptoCompare API (Free, Public)
     const response = await axios.get(
       "https://min-api.cryptocompare.com/data/v2/news/?lang=EN",
       {
@@ -24,6 +23,9 @@ const getLiveNews = async (req, res) => {
         }
       }
     );
+    console.log("CryptoCompare Response Status:", response.status);
+    console.log("CryptoCompare Data Type:", typeof response.data);
+    // console.log("CryptoCompare Data:", JSON.stringify(response.data).slice(0, 200));
     
     if (response.data && response.data.Data) {
       cachedNews = response.data.Data;
