@@ -462,7 +462,7 @@ const logoutUser = (req, res) => {
     .clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 🔐 Set true in production
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     })
     .json({ message: "Logout successful" });
 };
