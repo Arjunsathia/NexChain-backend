@@ -28,6 +28,7 @@ const notificationRoutes = require("./Routes/notificationRoutes");
 const authRoutes = require("./Routes/authRoutes");
 const coinRoutes = require("./Routes/coinRoutes");
 const newsRoutes = require("./Routes/newsRoutes");
+const chatRoutes = require("./Routes/chatRoutes");
 
 
 const app = express();
@@ -65,6 +66,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/coins", coinRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/chat", chatRoutes);
 
 
 // Global Error Handler
