@@ -7,7 +7,7 @@ const socketService = require("./socketService");
 class AlertService {
   constructor() {
     this.processing = false;
-    this.lastChecked = {}; // Cache to prevent spamming triggers
+    this.lastChecked = {}; 
   }
 
   /**

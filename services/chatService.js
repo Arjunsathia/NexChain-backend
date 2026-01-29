@@ -1,5 +1,35 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const priceService = require("./priceService");
+const axios = require("axios");
+
+// Integrated Price Fetching Logic (formerly priceService.js)
+async function getCryptoPrice(symbol, currency = "USDT") {
+  try {
+    const pair = `${symbol.toUpperCase()}${currency.toUpperCase()}`;
+    // Using Binance API as primary source
+    const endpoints = [
+      `https://api.binance.com/api/v3/ticker/price?symbol=${pair}`,
+      `https://api.binance.us/api/v3/ticker/price?symbol=${pair}`,
+      `https://data-api.binance.vision/api/v3/ticker/price?symbol=${pair}`
+    ];
+
+    for (const url of endpoints) {
+      try {
+        // @ts-ignore
+        const response = await axios.get(url, { timeout: 3000 });
+        if (response.data && response.data.price) {
+          return parseFloat(response.data.price);
+        }
+      } catch {
+        // Continue to next endpoint
+      }
+    }
+    console.warn(`[ChatService] ⚠️ Could not fetch price for ${pair}`);
+    return null;
+  } catch (error) {
+    console.error("[ChatService] Price Fetch Error:", error.message);
+    return null;
+  }
+}
 
 let model;
 
@@ -117,7 +147,7 @@ const chatService = {
           const { symbol, currency } = call.args;
           console.log(`[ChatService] 🛠️ Tool Call: get_crypto_price(${symbol}, ${currency})`);
           
-          let price = await priceService.getPrice(symbol, currency || "USDT");
+          let price = await getCryptoPrice(symbol, currency || "USDT");
           
           // Basic logic for manual currency conversion (since we only fetch Binance pairs mostly)
           // If the user asked for INR but we fetched USDT (because BTCINR might not exist on global Binance),
