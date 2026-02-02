@@ -1,9 +1,10 @@
 const WatchList = require("../Models/watchlistModel");
+const { normalizeCoinImage } = require("../utils/imageUtils");
 
 exports.addToWatchList = async (req, res) => {
   try {
     let { user_id } = req.body;
-    const { id } = req.body;
+    const { id, image: rawImage } = req.body;
 
     if (!user_id && req.user) {
       user_id = req.user.id;
@@ -24,8 +25,15 @@ exports.addToWatchList = async (req, res) => {
         .json({ message: "Coin already in watchlist for this user" });
     }
 
+    // Normalize image if present
+    const image = normalizeCoinImage(rawImage || req.body.image);
+
     // Create and save the new watchlist item
-    const saved = await WatchList.create({ ...req.body, user_id });
+    const saved = await WatchList.create({
+      ...req.body,
+      user_id,
+      image
+    });
     res.status(201).json(saved);
   } catch (err) {
     res.status(500).json({ message: err.message });

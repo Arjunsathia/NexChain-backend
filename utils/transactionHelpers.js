@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const PurchasedCoin = require("../Models/PurchasedCoin");
 const Transaction = require("../Models/Transaction");
 const User = require("../Models/userModel");
+const { normalizeCoinImage } = require("./imageUtils");
 
 /**
  * Helper to execute a Buy Transaction atomically
@@ -26,7 +27,8 @@ const executeBuy = async (
   session.startTransaction();
 
   try {
-    const { coinId, coinName, coinSymbol, image } = coinData;
+    const { coinId, coinName, coinSymbol, image: rawImage } = coinData;
+    const image = normalizeCoinImage(rawImage);
 
     let user;
     if (deductBalance) {
@@ -159,14 +161,14 @@ const executeSell = async (userId, coinId, quantity, price) => {
 
     // FIFO Logic
     let remainingToSell = quantity;
-    const purchasesToUpdate = [];
-    const purchasesToDelete = [];
+    const updatedPurchases = [];
+    const deletedPurchases = [];
 
     // We need coin details for transaction record, get from first purchase
     const firstPurchase = purchases[0];
     const coinName = firstPurchase.coinName;
     const coinSymbol = firstPurchase.coinSymbol;
-    const image = firstPurchase.image;
+    const image = normalizeCoinImage(firstPurchase.image);
 
     for (let purchase of purchases) {
       if (remainingToSell <= 0) break;
@@ -179,23 +181,19 @@ const executeSell = async (userId, coinId, quantity, price) => {
       purchase.totalCost -= sellQuantity * averageCost;
 
       if (purchase.quantity <= 0.00000001) {
-        purchasesToDelete.push(purchase._id);
+        deletedPurchases.push(purchase._id);
       } else {
-        purchasesToUpdate.push(purchase);
+        await purchase.save({ session });
+        updatedPurchases.push(purchase);
       }
 
       remainingToSell -= sellQuantity;
     }
 
-    // Update partially sold purchases
-    for (let p of purchasesToUpdate) {
-      await p.save({ session });
-    }
-
     // Delete fully sold purchases
-    if (purchasesToDelete.length > 0) {
+    if (deletedPurchases.length > 0) {
       await PurchasedCoin.deleteMany(
-        { _id: { $in: purchasesToDelete } },
+        { _id: { $in: deletedPurchases } },
         { session },
       );
     }
@@ -227,8 +225,8 @@ const executeSell = async (userId, coinId, quantity, price) => {
       success: true,
       newBalance: user.virtualBalance,
       saleAmount,
-      deletedPurchases: purchasesToDelete.length,
-      updatedPurchases: purchasesToUpdate.length,
+      deletedPurchases, // Now returning IDs
+      updatedPurchases, // Now returning full objects
     };
   } catch (error) {
     await session.abortTransaction();

@@ -1,4 +1,5 @@
 const Alert = require("../Models/Alert");
+const { normalizeCoinImage } = require("../utils/imageUtils");
 
 // Create a new price alert
 exports.createAlert = async (req, res) => {
@@ -7,12 +8,14 @@ exports.createAlert = async (req, res) => {
     coin_id,
     coin_symbol,
     coin_name,
-    coin_image,
+    coin_image: rawImage,
     target_price,
     condition, // 'above' or 'below'
   } = req.body;
 
   try {
+    const coin_image = normalizeCoinImage(rawImage);
+
     const newAlert = await Alert.create({
       user_id,
       coin_id,

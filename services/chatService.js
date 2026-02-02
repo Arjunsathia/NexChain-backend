@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const axios = require("axios");
+const newsService = require("./newsService");
 
 // Integrated Price Fetching Logic (formerly priceService.js)
 async function getCryptoPrice(symbol, currency = "USDT") {
@@ -104,6 +105,19 @@ const chatService = {
               },
               required: ["symbol"]
             }
+          },
+          {
+            name: "get_crypto_news",
+            description: "Get the latest cryptocurrency and industry news. Use this when the user asks for news, updates, or what's happening in the crypto world.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                limit: {
+                  type: "NUMBER",
+                  description: "The number of news items to fetch. Default is 5."
+                }
+              }
+            }
           }
         ]
       }
@@ -171,6 +185,44 @@ const chatService = {
           result = await chat.sendMessage([functionResponse]);
           response = await result.response;
           text = response.text();
+        } else if (call.name === "get_crypto_news") {
+          const { limit = 5 } = call.args;
+          console.log(`[ChatService] 🛠️ Tool Call: get_crypto_news(limit: ${limit})`);
+
+          try {
+            const allNews = await newsService.fetchNews();
+            const topNews = allNews.slice(0, limit).map(item => ({
+              title: item.title,
+              source: item.source,
+              url: item.url,
+              body: item.body.substring(0, 150) + "..."
+            }));
+
+            const functionResponse = {
+              functionResponse: {
+                name: "get_crypto_news",
+                response: {
+                  news: topNews,
+                  count: topNews.length
+                }
+              }
+            };
+
+            result = await chat.sendMessage([functionResponse]);
+            response = await result.response;
+            text = response.text();
+          } catch (newsError) {
+            console.error("[ChatService] News Tool Error:", newsError.message);
+            const functionResponse = {
+              functionResponse: {
+                name: "get_crypto_news",
+                response: { error: "Failed to fetch news." }
+              }
+            };
+            result = await chat.sendMessage([functionResponse]);
+            response = await result.response;
+            text = response.text();
+          }
         }
       }
 

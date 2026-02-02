@@ -1,6 +1,7 @@
 const Order = require("../Models/Order");
 const User = require("../Models/userModel");
 const PurchasedCoin = require("../Models/PurchasedCoin");
+const { normalizeCoinImage } = require("../utils/imageUtils");
 
 // Create a new limit order
 // Create a new limit order
@@ -10,7 +11,7 @@ exports.createOrder = async (req, res) => {
     coin_id,
     coin_symbol,
     coin_name,
-    coin_image,
+    coin_image: rawImage,
     type, // 'buy' or 'sell'
     category = "limit", // 'market', 'limit', 'stop_limit', 'stop_market'
     limit_price,
@@ -19,6 +20,7 @@ exports.createOrder = async (req, res) => {
   } = req.body;
 
   try {
+    const coin_image = normalizeCoinImage(rawImage);
     const user = await User.findOne({ id: user_id });
     if (!user) return res.status(404).json({ error: "User not found" });
 
@@ -127,7 +129,7 @@ exports.createOCOOrder = async (req, res) => {
     coin_id,
     coin_symbol,
     coin_name,
-    coin_image,
+    coin_image: rawImage,
     type, // 'buy' or 'sell'
     quantity,
     // Leg 1: Take Profit (Limit)
@@ -138,6 +140,7 @@ exports.createOCOOrder = async (req, res) => {
   } = req.body;
 
   try {
+    const coin_image = normalizeCoinImage(rawImage);
     const user = await User.findOne({ id: user_id });
     if (!user) return res.status(404).json({ error: "User not found" });
     if (user.isFrozen) return res.status(403).json({ error: "Account frozen" });
