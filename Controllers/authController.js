@@ -1,7 +1,7 @@
 const User = require("../Models/userModel");
 const OTP = require("../Models/otpModel");
 const { generateOTP, hashOTP } = require("../utils/otpUtils");
-const { sendOTPEmail } = require("../utils/emailService");
+const { sendOTPEmail, sendEmail } = require("../utils/emailService");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
@@ -9,6 +9,7 @@ const asyncHandler = require("express-async-handler");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 const { OAuth2Client } = require("google-auth-library");
+const crypto = require("crypto");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
@@ -488,6 +489,166 @@ const googleLogin = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Resend Email OTP
+ * @route   POST /api/auth/resend-otp
+ */
+const resendOTP = asyncHandler(async (req, res) => {
+  let { email } = req.body;
+  email = email.toLowerCase();
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  if (user.emailVerified) {
+    return res.status(400).json({ message: "Email already verified" });
+  }
+
+  // Check cooldown? (Optional logic using otpExpires or separate field)
+  // For now, simple regeneration
+  
+  const otp = generateOTP();
+  const secret = process.env.OTP_SECRET || "nexchain_otp_secret_key";
+  const otpHash = hashOTP(otp, secret);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+  // Check if existing OTP prevents spam (e.g. wait 1 min)
+  // Logic: find latest OTP for this email
+  const existingOTP = await OTP.findOne({ email, used: false }).sort({ createdAt: -1 });
+  if (existingOTP) {
+    const timeDiff = (Date.now() - new Date(existingOTP.createdAt).getTime()) / 1000;
+    if (timeDiff < 60) {
+      return res.status(429).json({ message: `Please wait ${Math.ceil(60 - timeDiff)}s before resending.` });
+    }
+  }
+
+  await OTP.create({
+    email,
+    otpHash,
+    expiresAt,
+    attemptsLeft: 3,
+  });
+
+  await sendOTPEmail(email, otp);
+
+  res.json({ success: true, message: "OTP resent successfully" });
+});
+
+/**
+ * @desc    Forgot Password (Send Reset Link)
+ * @route   POST /api/auth/forgot-password
+ */
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    // Return 200 even if user not found to prevent enumeration
+    // But for UX we often return 404 in dev types. 
+    // Secure Practice: "If that email exists, we sent a link."
+    return res.json({ success: true, message: "If registered, a reset link has been sent." });
+  }
+
+  // Generate Reset Token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+  await user.save();
+
+  // Construct Reset URL
+  // Frontend URL usually in env, fallback to localhost
+  const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&id=${user.id}`;
+
+  const message = `
+    <h1>Password Reset Request</h1>
+    <p>You requested a password reset. Please click the link below to reset your password:</p>
+    <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
+    <p>This link expires in 30 minutes.</p>
+  `;
+
+  try {
+    const emailSent = await sendEmail(user.email, "Password Reset Request", message);
+    
+    if (!emailSent) {
+      throw new Error("Email sending failed");
+    }
+
+    res.json({ success: true, message: "Reset link sent to email" });
+  } catch (error) {
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    res.status(500).json({ message: "Email could not be sent" });
+  }
+
+});
+
+/**
+ * @desc    Reset Password
+ * @route   POST /api/auth/reset-password
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, id, password, confirmPassword } = req.body;
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    id,
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(400).json({ message: "Invalid or expired token" });
+  }
+
+  user.password = await bcrypt.hash(password, 10);
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  
+  // Optional: Invalidate all sessions (change jwt secret or track version)
+  // For now just save.
+  
+  await user.save();
+
+  res.json({ success: true, message: "Password updated successfully" });
+});
+
+/**
+ * @desc    Logout User
+ * @route   POST /api/auth/logout
+ */
+const logout = (req, res) => {
+  res.clearCookie("token", {
+     httpOnly: true,
+     secure: process.env.NODE_ENV === "production",
+     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  });
+  
+  res.clearCookie("refreshToken", {
+     httpOnly: true,
+     secure: process.env.NODE_ENV === "production",
+     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  });
+
+  res.status(200).json({ success: true, message: "Logged out successfully" });
+};
+
 module.exports = {
   register,
   verifyEmailOTP,
@@ -496,4 +657,8 @@ module.exports = {
   refresh,
   setupTOTP,
   verifyTOTP,
+  resendOTP,
+  forgotPassword,
+  resetPassword,
+  logout
 };

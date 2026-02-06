@@ -3,7 +3,10 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
-const path = require("path"); 
+const path = require("path");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const { rateLimit } = require("express-rate-limit");
 
 // Load environment config early to ensure variables are available
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -54,6 +57,42 @@ app.use(express.json());
 // Serve the uploads directory statically for image access
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Security Middleware
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded by frontend
+  })
+);
+
+// Manual Mongo Sanitize to handle Express 5 read-only properties
+app.use((req, res, next) => {
+  if (req.body) req.body = mongoSanitize.sanitize(req.body);
+  if (req.params) req.params = mongoSanitize.sanitize(req.params);
+  
+  // Clean query safely (ignore if read-only getter)
+  try {
+    if (req.query) req.query = mongoSanitize.sanitize(req.query);
+  } catch (err) {
+    // console.warn("Could not sanitize query:", err.message);
+  }
+  next();
+});
+
+// Rate Limiting for Auth Routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 10, // v7/v8 uses 'limit' instead of 'max' (checking support for both)
+  max: 10, // Keeping 'max' for backward compatibility if needed
+  message: {
+    success: false,
+    message: "Too many login attempts from this IP, please try again after 15 minutes",
+  },
+  standardHeaders: true, 
+  legacyHeaders: false,
+});
+
+app.use("/api/auth", authLimiter);
+
 // Routes 
 app.use("/api/users", userRoutes);
 app.use("/api/watchlist", watchListRoutes);
@@ -73,17 +112,54 @@ app.use("/api/chat", chatRoutes);
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error("Server Error:", err.message);
-  res.status(500).json({
+
+  // Handle Joi Validation Errors (fallback if middleware didn't catch it, though check used there)
+  // Actually, Joi errors are usually handled in the middleware, but if thrown:
+  if (err.isJoi) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation Error",
+      errors: err.details.map((d) => d.message),
+    });
+  }
+
+  // Handle MongoDB Duplicate Key Error
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue)[0];
+    return res.status(409).json({
+      success: false,
+      message: `Duplicate field value entered: ${field}`,
+    });
+  }
+
+  // Handle MongoDB Cast Error (Invalid ID)
+  if (err.name === "CastError") {
+    return res.status(400).json({
+      success: false,
+      message: `Resource not found. Invalid: ${err.path}`,
+    });
+  }
+
+  res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal Server Error",
+    errors: err.errors || undefined, // For other structured errors
   });
 });
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+let server;
+if (require.main === module) {
+  server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app; // Export for testing
 
 // Initialize real-time socket updates
 const socketService = require("./services/socketService");
-socketService.init(server);
+if (server) {
+  socketService.init(server);
+}

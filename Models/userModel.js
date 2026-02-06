@@ -62,8 +62,29 @@ const userSchema = new mongoose.Schema(
       type: Object, // Stores ASCII, Hex, Base32, OTPAuth URL
       select: false, // Do not return by default
     },
+    // Password Reset Fields
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
+    // OTP Fields for Email Verification / 2FA
+    otp: {
+      type: String,
+      select: false,
+    },
+    otpExpires: {
+      type: Date,
+      select: false,
+    },
   },
   { timestamps: true },
 );
+
+// Index for password reset token
+userSchema.index({ resetPasswordToken: 1 });
 
 module.exports = mongoose.model("User", userSchema);
