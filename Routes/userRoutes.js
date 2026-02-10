@@ -9,6 +9,7 @@ const {
   logoutUser,
   contactUser,
   contactSupport,
+  getLeaderboard
 } = require("../Controllers/userController");
 const {
   protect,
@@ -18,6 +19,7 @@ const {
 const upload = require("../middleware/uploadMiddleware");
 
 router.get("/", protect, adminOnly, getUsers);
+router.get("/leaderboard", protect, getLeaderboard);
 router.get("/:id", getUserById);
 
 // Update Profile Image

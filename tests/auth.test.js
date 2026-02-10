@@ -1,3 +1,5 @@
+/* eslint-env jest */
+/* global jest, describe, it, expect, beforeAll, afterAll */
 // Mock background services to prevent side effects/crashes
 jest.mock("../services/tradingEngine", () => ({}));
 jest.mock("../services/socketService", () => ({ init: jest.fn(), getIO: jest.fn() }));
@@ -7,6 +9,7 @@ jest.mock("../utils/emailService", () => ({
   sendOTPEmail: jest.fn().mockResolvedValue(true),
 }));
 
+/* eslint-env jest */
 const request = require("supertest");
 const mongoose = require("mongoose");
 const app = require("../server");

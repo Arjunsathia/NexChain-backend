@@ -467,6 +467,30 @@ const logoutUser = (req, res) => {
     .json({ message: "Logout successful" });
 };
 
+const getLeaderboard = async (req, res) => {
+  try {
+    // Phase 1: Rank by Virtual Balance (Liquid Cash)
+    // Filter: Only show users who have at least one transaction
+    
+    // Get list of user IDs who have made transactions
+    const Transaction = require("../Models/Transaction");
+    const activeUserIds = await Transaction.distinct("user_id");
+
+    const users = await User.find({ 
+      isDeleted: { $ne: true },
+      id: { $in: activeUserIds } // Only users in the transaction list
+    })
+      .sort({ virtualBalance: -1 })
+      .limit(10)
+      .select("name user_name image virtualBalance role id");
+
+    res.json(users);
+  } catch (error) {
+    console.error("Leaderboard Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -476,4 +500,5 @@ module.exports = {
   logoutUser,
   contactUser,
   contactSupport,
+  getLeaderboard,
 };

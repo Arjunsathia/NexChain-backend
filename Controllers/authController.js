@@ -582,7 +582,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     }
 
     res.json({ success: true, message: "Reset link sent to email" });
-  } catch (error) {
+  } catch (err) {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();

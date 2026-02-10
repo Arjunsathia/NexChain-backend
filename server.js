@@ -4,9 +4,8 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const path = require("path");
-const helmet = require("helmet");
+const helmet = require("helmet").default;
 const mongoSanitize = require("express-mongo-sanitize");
-const { rateLimit } = require("express-rate-limit");
 
 // Load environment config early to ensure variables are available
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -78,20 +77,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate Limiting for Auth Routes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 10, // v7/v8 uses 'limit' instead of 'max' (checking support for both)
-  max: 10, // Keeping 'max' for backward compatibility if needed
-  message: {
-    success: false,
-    message: "Too many login attempts from this IP, please try again after 15 minutes",
-  },
-  standardHeaders: true, 
-  legacyHeaders: false,
-});
+// Rate Limiting for Auth Routes is handled in authRoutes.js with specific limiters
+// const authLimiter = ... (removed to avoid conflict)
 
-app.use("/api/auth", authLimiter);
+// app.use("/api/auth", authLimiter); // Removed
 
 // Routes 
 app.use("/api/users", userRoutes);
