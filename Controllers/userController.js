@@ -270,10 +270,10 @@ const updateProfileImage = async (req, res) => {
     if (req.file.path && req.file.path.startsWith("http")) {
       user.image = req.file.path;
     } else {
-      // Construct absolute URL for local file
-      const host = req.get("host");
-      let protocol = req.headers["x-forwarded-proto"] || "http";
-      user.image = `${protocol}://${host}/uploads/${req.file.filename}`;
+      // Local file: Store only the filename.
+      // The frontend constructs the full URL using its configured SERVER_URL.
+      // This prevents issues where 'localhost' is stored but accessed from another device.
+      user.image = req.file.filename;
     }
 
     await user.save();

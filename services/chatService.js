@@ -37,9 +37,9 @@ let model;
 try {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("❌ CRITICAL ERROR: GEMINI_API_KEY is missing in process.env!");
+    console.error("❌ [AI-CHAT ] GEMINI_API_KEY missing!");
   } else {
-    console.log("✅ ChatService: GEMINI_API_KEY found (Length: " + apiKey.length + ")");
+    console.log(`[AI-CHAT ] ✅ API Key connected (${apiKey.length} chars)`);
     const genAI = new GoogleGenerativeAI(apiKey);
     // Switching to 'gemini-flash-latest' which is the stable 1.5 Flash model.
     // This model has much higher rate limits (15 RPM) compared to experimental 2.0 models.
@@ -159,7 +159,7 @@ const chatService = {
         
         if (call.name === "get_crypto_price") {
           const { symbol, currency } = call.args;
-          console.log(`[ChatService] 🛠️ Tool Call: get_crypto_price(${symbol}, ${currency})`);
+          console.log(`[AI-CHAT ] 🛠️ Tool Call: get_crypto_price(${symbol}, ${currency})`);
           
           let price = await getCryptoPrice(symbol, currency || "USDT");
           
@@ -187,7 +187,7 @@ const chatService = {
           text = response.text();
         } else if (call.name === "get_crypto_news") {
           const { limit = 5 } = call.args;
-          console.log(`[ChatService] 🛠️ Tool Call: get_crypto_news(limit: ${limit})`);
+          console.log(`[AI-CHAT ] 🛠️ Tool Call: get_crypto_news(limit: ${limit})`);
 
           try {
             const allNews = await newsService.fetchNews();
@@ -212,7 +212,7 @@ const chatService = {
             response = await result.response;
             text = response.text();
           } catch (newsError) {
-            console.error("[ChatService] News Tool Error:", newsError.message);
+            console.error("[AI-CHAT ] News Tool Error:", newsError.message);
             const functionResponse = {
               functionResponse: {
                 name: "get_crypto_news",

@@ -10,7 +10,7 @@ const schemas = {
     confirm_password: Joi.any().valid(Joi.ref('password')).required().messages({
         "any.only": "Passwords must match"
     }),
-    role: Joi.string().valid("user", "admin").optional(),
+    // role: Joi.string().valid("user", "admin").optional(), // REMOVED FOR SECURITY
   }),
 
   login: Joi.object({

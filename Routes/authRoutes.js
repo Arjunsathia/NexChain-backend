@@ -36,7 +36,7 @@ const loginLimiter = rateLimit({
 const validate = require("../middleware/validation");
 const schemas = require("../utils/validationSchemas");
 
-router.post("/register", validate(schemas.register), register);
+router.post("/register", otpLimiter, validate(schemas.register), register);
 router.post("/verify-email-otp", otpLimiter, validate(schemas.verifyEmail), verifyEmailOTP);
 router.post("/login", loginLimiter, validate(schemas.login), login);
 router.post("/google", googleLogin);

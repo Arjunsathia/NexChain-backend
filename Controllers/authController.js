@@ -63,13 +63,16 @@ const register = asyncHandler(async (req, res) => {
     phone,
     user_name,
     password: hashedPassword,
-    role: role || "user",
+    role: "user", // CRITICAL FIX: Force role to user to prevent admin spoofing
     emailVerified: false,
   });
 
   // Generate a new OTP and send it via email for account verification
   const otp = generateOTP();
-  const secret = process.env.OTP_SECRET || "nexchain_otp_secret_key";
+  const secret = process.env.OTP_SECRET;
+  if (!secret) {
+    throw new Error("OTP_SECRET not configured");
+  }
   const otpHash = hashOTP(otp, secret);
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -98,7 +101,10 @@ const verifyEmailOTP = asyncHandler(async (req, res) => {
 
   if (email) email = email.toLowerCase();
 
-  const secret = process.env.OTP_SECRET || "nexchain_otp_secret_key";
+  const secret = process.env.OTP_SECRET;
+  if (!secret) {
+    throw new Error("OTP_SECRET not configured");
+  }
   const otpHash = hashOTP(otp, secret);
 
   const otpRecord = await OTP.findOne({ email, used: false }).sort({
@@ -258,6 +264,7 @@ const refresh = asyncHandler(async (req, res) => {
       maxAge: 15 * 60 * 1000,
     });
     res.json({ accessToken });
+    return;
   } catch {
     res.status(401).json({ message: "Invalid refresh token" });
     return;
@@ -291,18 +298,17 @@ const setupTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
   });
 
   // Generate QR Code for client app scanning
-  QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
-    if (err) {
-      res.status(500).json({ message: "Error generating QR code" });
-      return;
-    }
+  try {
+    const data_url = await QRCode.toDataURL(secret.otpauth_url);
     // Send temporary secret to client for verification (app scanning)
     res.json({
       message: "Scan this QR code with Google Authenticator",
       secret: secret.base32, // User needs this if they can't scan
       qrCode: data_url,
     });
-  });
+  } catch (err) {
+    res.status(500).json({ message: "Error generating QR code" });
+  }
 });
 
 /**
@@ -499,18 +505,23 @@ const resendOTP = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
   if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    res.status(404).json({ message: "User not found" });
+    return;
   }
 
   if (user.emailVerified) {
-    return res.status(400).json({ message: "Email already verified" });
+    res.status(400).json({ message: "Email already verified" });
+    return;
   }
 
   // Check cooldown? (Optional logic using otpExpires or separate field)
   // For now, simple regeneration
   
   const otp = generateOTP();
-  const secret = process.env.OTP_SECRET || "nexchain_otp_secret_key";
+  const secret = process.env.OTP_SECRET;
+  if (!secret) {
+      throw new Error("OTP_SECRET not configured");
+  }
   const otpHash = hashOTP(otp, secret);
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
@@ -520,7 +531,8 @@ const resendOTP = asyncHandler(async (req, res) => {
   if (existingOTP) {
     const timeDiff = (Date.now() - new Date(existingOTP.createdAt).getTime()) / 1000;
     if (timeDiff < 60) {
-      return res.status(429).json({ message: `Please wait ${Math.ceil(60 - timeDiff)}s before resending.` });
+      res.status(429).json({ message: `Please wait ${Math.ceil(60 - timeDiff)}s before resending.` });
+      return;
     }
   }
 
@@ -548,7 +560,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
     // Return 200 even if user not found to prevent enumeration
     // But for UX we often return 404 in dev types. 
     // Secure Practice: "If that email exists, we sent a link."
-    return res.json({ success: true, message: "If registered, a reset link has been sent." });
+    res.json({ success: true, message: "If registered, a reset link has been sent." });
+    return;
   }
 
   // Generate Reset Token
@@ -587,6 +600,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
     res.status(500).json({ message: "Email could not be sent" });
+    return;
   }
 
 });
@@ -599,7 +613,8 @@ const resetPassword = asyncHandler(async (req, res) => {
   const { token, id, password, confirmPassword } = req.body;
 
   if (password !== confirmPassword) {
-    return res.status(400).json({ message: "Passwords do not match" });
+    res.status(400).json({ message: "Passwords do not match" });
+    return;
   }
 
   const hashedToken = crypto
@@ -614,15 +629,13 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    return res.status(400).json({ message: "Invalid or expired token" });
+    res.status(400).json({ message: "Invalid or expired token" });
+    return;
   }
 
   user.password = await bcrypt.hash(password, 10);
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
-  
-  // Optional: Invalidate all sessions (change jwt secret or track version)
-  // For now just save.
   
   await user.save();
 

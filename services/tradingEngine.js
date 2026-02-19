@@ -21,17 +21,17 @@ class TradingEngine {
   }
 
   start() {
-    console.log("🚀 [Trading Engine] Initializing...");
+    console.log("🚀 [TRADING ]  Initializing engine...");
     
     // 1. Initial subscription and DB sync
-    this.syncWithDatabase().catch(err => console.error("[Trading Engine] Startup Sync Error:", err.message));
+    this.syncWithDatabase().catch(err => console.error("❌ [TRADING ]  Sync Error:", err.message));
 
     // 2. Schedule regular DB syncs
     cron.schedule("*/30 * * * * *", async () => {
       try {
         await this.syncWithDatabase();
       } catch (err) {
-        console.error("[Trading Engine] Cron Sync Error:", err.message);
+        console.error("❌ [TRADING ]  Cron Sync Error:", err.message);
       }
     });
 
@@ -40,11 +40,11 @@ class TradingEngine {
       try {
         await this.checkAndExecuteOrders();
       } catch (err) {
-        console.error("[Trading Engine] Cron Execution Error:", err.message);
+        console.error("❌ [TRADING ]  Execution Error:", err.message);
       }
     });
 
-    console.log("✅ [Trading Engine] Running.");
+    console.log("✅ [TRADING ]  Engine active and running.");
   }
 
   async syncWithDatabase() {
@@ -65,7 +65,7 @@ class TradingEngine {
       const newSymbols = [...currentSymbols].filter(s => !this.activeSymbols.has(s));
 
       if (newSymbols.length > 0) {
-        console.log(`[Trading Engine] ➕ Subscribing to ${newSymbols.length} new symbols...`);
+        console.log(`➕ [TRADING ]  Subscribing to ${newSymbols.length} new symbols...`);
         newSymbols.forEach(s => this.activeSymbols.add(s));
         
         // If WS is open, send SUBSCRIBE message instead of reconnecting
@@ -78,7 +78,7 @@ class TradingEngine {
               id: Date.now()
             }));
           } catch (sendErr) {
-            console.error("[Trading Engine] 📡 Subscription send failed:", sendErr.message);
+            console.error("[TRADING ] 📡 Subscription send failed:", sendErr.message);
             this.connectWebSocket(); // Reconnect on failed send
           }
         } else {
@@ -86,7 +86,7 @@ class TradingEngine {
         }
       }
     } catch (error) {
-      console.error("[Trading Engine] ❌ Sync Error:", error.message);
+      console.error("[TRADING ] ❌ Sync Error:", error.message);
     }
   }
 
@@ -94,26 +94,26 @@ class TradingEngine {
     if (!symbol) return;
     const s = symbol.toLowerCase();
     if (!this.activeSymbols.has(s)) {
-      console.log(`[Trading Engine] 🔍 Request to track ${s}`);
+      console.log(`[TRADING ] 🔍 Request to track ${s}`);
       this.activeSymbols.add(s) ;
       
       if (this.ws && this.ws.readyState === WS_OPEN) {
         try {
-          console.log(`[Trading Engine] 📡 Sending SUBSCRIBE for ${s}`);
+          console.log(`[TRADING ] 📡 Sending SUBSCRIBE for ${s}`);
           this.ws.send(JSON.stringify({
             method: "SUBSCRIBE",
             params: [`${s}@ticker`],
             id: Date.now()
           }));
         } catch (sendErr) {
-          console.error("[Trading Engine] 📡 Manual subscription send failed:", sendErr.message);
+          console.error("[TRADING ] 📡 Manual subscription send failed:", sendErr.message);
           this.connectWebSocket();
         }
       } else if (!this.ws || this.ws.readyState === WS_CLOSED) {
         // Only trigger connect if it's NOT currently connecting
         this.connectWebSocket();
       } else if (this.ws.readyState === 0) { // CONNECTING
-        console.log(`[Trading Engine] ⏳ Socket connecting... ${s} will be tracked once open.`);
+        console.log(`[TRADING ] ⏳ Socket connecting... ${s} will be tracked once open.`);
       }
     }
   }
@@ -134,17 +134,17 @@ class TradingEngine {
 
     // 2. Try REST API Fallback
     // 2. Try REST API Fallback
-    // console.debug(`[Trading Engine] 🌐 Fetching REST fallback for ${s}`); 
+    // console.debug(`[TRADING ] 🌐 Fetching REST fallback for ${s}`); 
     try {
       const price = await this.fetchPriceREST(s);
       if (price) {
         this.prices[s] = { price, timestamp: Date.now() };
         return price;
       } else {
-        // console.warn(`[Trading Engine] ⚠️ Binance REST returned null for ${s}`);
+        // console.warn(`[TRADING ] ⚠️ Binance REST returned null for ${s}`);
       }
     } catch {
-      // console.error(`[Trading Engine] ❌ REST Fallback Failed for ${s}:`, err.message);
+      // console.error(`[TRADING ] ❌ REST Fallback Failed for ${s}:`, err.message);
     }
     return null;
   }
@@ -161,11 +161,11 @@ class TradingEngine {
       const price = await this.getPrice(s);
       if (price) return price;
       
-      console.log(`[Trading Engine] ⏳ Waiting for ${s} price (${Math.round((Date.now() - start)/1000)}s)...`);
+      console.log(`[TRADING ] ⏳ Waiting for ${s} price (${Math.round((Date.now() - start)/1000)}s)...`);
       await new Promise(r => setTimeout(r, 200));
     }
     
-    console.error(`[Trading Engine] ❌ Timeout waiting for ${s}`);
+    console.error(`[TRADING ] ❌ Timeout waiting for ${s}`);
     return null;
   }
 
@@ -263,14 +263,14 @@ class TradingEngine {
     });
 
     this.ws.on("error", (err) => {
-      console.error("[Trading Engine] ⚠️ WebSocket Error:", err.message);
+      console.error("[TRADING ] ⚠️ WebSocket Error:", err.message);
     });
 
     this.ws.on("close", () => {
       // Avoid log spam if we closed it ourselves via sync
       if (this.ws === null) return; 
 
-      console.log("[Trading Engine] 🔌 WebSocket Closed. Reconnecting...");
+      console.log("[TRADING ] 🔌 WebSocket Closed. Reconnecting...");
       setTimeout(() => {
         this.reconnectAttempts++;
         if (this.reconnectAttempts < 5) this.connectWebSocket();
@@ -295,7 +295,7 @@ class TradingEngine {
       }
 
     } catch (error) {
-      console.error("[Trading Engine] ❌ Loop Error:", error.message);
+      console.error("[TRADING ] ❌ Loop Error:", error.message);
     } finally {
       this.isProcessing = false;
     }

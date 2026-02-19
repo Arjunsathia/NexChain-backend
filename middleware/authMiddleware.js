@@ -5,17 +5,19 @@ const User = require("../Models/userModel");
 const protect = (req, res, next) => {
   let token;
 
-  // Attempt to retrieve token from HTTP-only cookies
-  if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
+  // Check for Bearer token in the Authorization header FIRST
 
-  // Fallback: Check for Bearer token in the Authorization header
-  else if (
+
+  if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
+  }
+
+  // Fallback: Attempt to retrieve token from HTTP-only cookies
+  else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
   }
 
   if (!token) {

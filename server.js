@@ -7,7 +7,7 @@ const path = require("path");
 const helmet = require("helmet").default;
 const mongoSanitize = require("express-mongo-sanitize");
 
-// Load environment config early to ensure variables are available
+// Load environment config
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 const fs = require("fs");
@@ -141,7 +141,8 @@ const PORT = process.env.PORT || 5000;
 let server;
 if (require.main === module) {
   server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`[SERVER  ] ✅ Running on port ${PORT}`);
+    console.log(`[SERVER  ]  Environment: ${process.env.NODE_ENV || "development"}`);
   });
 }
 
