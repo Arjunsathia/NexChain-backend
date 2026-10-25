@@ -58,7 +58,7 @@ const corsOptions = {
 // Structured request logs in production (Render log stream)
 if (process.env.NODE_ENV === "production") {
   app.use(
-    require("pino-http")({
+    require("pino-http").pinoHttp({
       autoLogging: { ignore: (req) => req.url === "/api/health" },
       redact: ["req.headers.authorization", "req.headers.cookie", 'res.headers["set-cookie"]'],
     }),
