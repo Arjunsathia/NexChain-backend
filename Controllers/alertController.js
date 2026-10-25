@@ -1,12 +1,14 @@
+const mongoose = require("mongoose");
 const Alert = require("../Models/Alert");
+const User = require("../Models/userModel");
+const Notification = require("../Models/Notification");
 const { normalizeCoinImage } = require("../utils/imageUtils");
+const { resolveCoin } = require("../services/coinRegistry");
 
 // Create a new price alert
 exports.createAlert = async (req, res) => {
   const {
-    user_id,
     coin_id,
-    coin_symbol,
     coin_name,
     coin_image: rawImage,
     target_price,
@@ -14,13 +16,17 @@ exports.createAlert = async (req, res) => {
   } = req.body;
 
   try {
+    const coin = await resolveCoin(coin_id);
+    if (!coin) {
+      return res.status(400).json({ error: "Alerts are not available for this coin" });
+    }
     const coin_image = normalizeCoinImage(rawImage);
 
     const newAlert = await Alert.create({
-      user_id,
-      coin_id,
-      coin_symbol,
-      coin_name,
+      user_id: req.user.id,
+      coin_id: coin.coinId,
+      coin_symbol: coin.symbol,
+      coin_name: coin.name || coin_name,
       coin_image,
       target_price,
       condition,
@@ -51,7 +57,11 @@ exports.getAlerts = async (req, res) => {
 exports.deleteAlert = async (req, res) => {
   try {
     const { alertId } = req.params;
-    await Alert.findByIdAndDelete(alertId);
+    if (!mongoose.isValidObjectId(alertId)) {
+      return res.status(404).json({ error: "Alert not found" });
+    }
+    const deleted = await Alert.findOneAndDelete({ _id: alertId, user_id: req.user.id });
+    if (!deleted) return res.status(404).json({ error: "Alert not found" });
     res.json({ success: true, message: "Alert deleted" });
   } catch {
     res.status(500).json({ error: "Failed to delete alert" });
@@ -60,15 +70,17 @@ exports.deleteAlert = async (req, res) => {
 
 // Check alerts (triggered by frontend or cron)
 exports.checkAlerts = async (req, res) => {
-  const { user_id, current_prices } = req.body; // current_prices: { coin_id: price, ... }
+  const user_id = req.user.id;
+  const current_prices = req.body.current_prices || {}; // { coin_id: price, ... }
 
   try {
     const alerts = await Alert.find({ user_id, status: "active" });
+    const userDoc = await User.findOne({ id: user_id }).select("_id");
     const triggeredAlerts = [];
 
     for (let alert of alerts) {
-      const currentPrice = current_prices[alert.coin_id];
-      if (!currentPrice) continue;
+      const currentPrice = Number(current_prices[alert.coin_id]);
+      if (!Number.isFinite(currentPrice) || currentPrice <= 0) continue;
 
       let triggered = false;
       if (alert.condition === "above" && currentPrice >= alert.target_price) {
@@ -86,9 +98,9 @@ exports.checkAlerts = async (req, res) => {
         await alert.save();
         triggeredAlerts.push(alert);
 
-        const Notification = require("../Models/Notification");
+        // Notification.user is the Mongo _id, not the UUID
         await Notification.create({
-          user: user_id,
+          user: userDoc._id,
           title: "Price Alert Triggered",
           message: `${alert.coin_symbol.toUpperCase()} has reached your target price of $${alert.target_price.toLocaleString()}`,
           type: "alert",

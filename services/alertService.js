@@ -3,6 +3,7 @@ const Notification = require("../Models/Notification");
 const User = require("../Models/userModel");
 const emailService = require("../utils/emailService");
 const socketService = require("./socketService");
+const escapeHtml = require("../utils/escapeHtml");
 
 class AlertService {
   constructor() {
@@ -108,9 +109,9 @@ class AlertService {
                         <h2 style="color: white; margin: 0;">Price Alert Hit! 🚀</h2>
                     </div>
                     <div style="padding: 30px;">
-                        <h3 style="color: #1f2937; margin-top: 0;">Your alert for ${alert.coin_name} was triggered.</h3>
+                        <h3 style="color: #1f2937; margin-top: 0;">Your alert for ${escapeHtml(alert.coin_name)} was triggered.</h3>
                         <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">
-                            The price of <strong>${alert.coin_symbol.toUpperCase()}</strong> has ${alert.condition === 'above' ? 'risen above' : 'dropped below'} your target.
+                            The price of <strong>${escapeHtml(alert.coin_symbol.toUpperCase())}</strong> has ${alert.condition === 'above' ? 'risen above' : 'dropped below'} your target.
                         </p>
                         
                         <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0;">

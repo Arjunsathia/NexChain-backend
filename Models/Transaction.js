@@ -55,5 +55,7 @@ const transactionSchema = new mongoose.Schema({
 // Index for efficient queries
 transactionSchema.index({ user_id: 1, transactionDate: -1 });
 transactionSchema.index({ user_id: 1, coin_id: 1 });
+// Admin dashboard: today's trades and volume
+transactionSchema.index({ transactionDate: -1 });
 
 module.exports = mongoose.model("Transaction", transactionSchema);

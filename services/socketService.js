@@ -1,6 +1,10 @@
 const WebSocket = require("ws");
-const jwt = require("jsonwebtoken");
-const url = require("url");
+const User = require("../Models/userModel");
+const { verifyAccessToken } = require("../utils/tokens");
+
+// Clients authenticate with their first message: {"type":"AUTH","token":"<access token>"}.
+// The token is not put in the URL, where proxies and access logs would record it.
+const AUTH_TIMEOUT_MS = 10000;
 
 class SocketService {
   constructor() {
@@ -11,55 +15,56 @@ class SocketService {
   init(server) {
     this.wss = new WebSocket.Server({ server });
 
-    this.wss.on("connection", (ws, req) => {
-      // 1. Extract Token from Query Params
-      const parameters = url.parse(req.url, true);
-      let token = parameters.query.token;
+    this.wss.on("connection", (ws) => {
+      const state = { isAlive: true, userId: null };
+      this.clientStates.set(ws, state);
 
-      if (Array.isArray(token)) {
-        token = token[0];
-      }
+      const authTimer = setTimeout(() => {
+        if (!state.userId) ws.close(4401, "Authentication required");
+      }, AUTH_TIMEOUT_MS);
 
-      if (!token) {
-        // Allow anonymous connection ONLY if your app supports public streams without auth.
-        // For NexChain, we want to enforce auth for user-specific streams.
-        // However, if there are public ticker streams, you might need to handle them differently.
-        // Assuming this socket is primarily for USER NOTIFICATIONS (Order updates), we require auth.
-        // If the frontend opens a separate "public" socket for prices, that's fine (served by Binance proxy maybe).
-        
-        // For now, if no token, mark as anonymous (or close if strict).
-        // Let's close for security as per audit plan.
-        ws.close(1008, "Authentication token required");
-        return;
-      }
+      ws.on("message", async (raw) => {
+        if (state.userId) return; // only the auth message is expected from clients
 
-      // 2. Verify Token
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        if (typeof decoded === 'string' || !decoded.id) {
-          throw new Error("Invalid token payload");
+        let message;
+        try {
+          message = JSON.parse(raw.toString());
+        } catch {
+          return ws.close(4400, "Invalid message");
+        }
+        if (message?.type !== "AUTH") return ws.close(4401, "Authentication required");
+
+        const decoded = verifyAccessToken(message.token);
+        if (!decoded) return ws.close(4401, "Invalid token");
+
+        try {
+          const user = await User.findOne({ id: decoded.id })
+            .select("id tokenVersion isDeleted")
+            .lean();
+          if (!user || user.isDeleted || (user.tokenVersion || 0) !== decoded.tv) {
+            return ws.close(4401, "Session expired");
+          }
+        } catch {
+          return ws.close(1011, "Server error");
         }
 
-        // 3. Store User ID
-        this.clientStates.set(ws, { isAlive: true, userId: decoded.id });
-      } catch {
-        ws.close(1008, "Invalid Token");
-        return;
-      }
+        clearTimeout(authTimer);
+        state.userId = decoded.id;
+        ws.send(JSON.stringify({ type: "AUTH_OK" }));
+      });
 
       ws.on("close", () => {
+        clearTimeout(authTimer);
         this.clientStates.delete(ws);
       });
 
-      ws.on('pong', () => { 
-        const state = this.clientStates.get(ws);
-        if (state) state.isAlive = true;
+      ws.on("pong", () => {
+        state.isAlive = true;
       });
     });
 
     // Heartbeat interval
-    setInterval(() => {
+    this.heartbeat = setInterval(() => {
       this.wss.clients.forEach((ws) => {
         const state = this.clientStates.get(ws);
         if (!state || state.isAlive === false) return ws.terminate();
@@ -69,8 +74,17 @@ class SocketService {
     }, 30000);
   }
 
+  /** Stops the heartbeat and closes every connection (graceful shutdown, tests) */
+  close() {
+    clearInterval(this.heartbeat);
+    if (!this.wss) return;
+    this.wss.clients.forEach((client) => client.terminate());
+    this.wss.close();
+    this.wss = null;
+  }
+
   /**
-   * Send a message to all connected clients
+   * Send a message to all authenticated clients
    * @param {string} type - Message type (e.g., 'ORDER_FILLED')
    * @param {Object} data - Payload
    */
@@ -79,14 +93,15 @@ class SocketService {
 
     const message = JSON.stringify({ type, data });
     this.wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
+      const state = this.clientStates.get(client);
+      if (client.readyState === WebSocket.OPEN && state?.userId) {
         client.send(message);
       }
     });
   }
 
   /**
-   * Send a message to a specific user
+   * Send a message to a specific user's connections
    * @param {string} userId - User ID to target
    * @param {string} type - Message type
    * @param {Object} data - Payload
@@ -95,16 +110,9 @@ class SocketService {
     if (!this.wss) return;
 
     const message = JSON.stringify({ type, data });
-    
     this.wss.clients.forEach((client) => {
       const state = this.clientStates.get(client);
-      
-      // CRITICAL SECURITY FIX: Only send if the connected socket belongs to the target userId
-      if (
-        client.readyState === WebSocket.OPEN &&
-        state &&
-        state.userId === userId
-      ) {
+      if (client.readyState === WebSocket.OPEN && state && state.userId === userId) {
         client.send(message);
       }
     });

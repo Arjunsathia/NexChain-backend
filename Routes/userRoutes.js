@@ -6,7 +6,6 @@ const {
   updateUser,
   updateProfileImage,
   deleteUser,
-  logoutUser,
   contactUser,
   contactSupport,
   getLeaderboard
@@ -14,24 +13,30 @@ const {
 const {
   protect,
   adminOnly,
+  selfOrAdmin,
   requireAdmin2FA,
 } = require("../middleware/authMiddleware");
+const validate = require("../middleware/validation");
+const schemas = require("../utils/validationSchemas");
 const upload = require("../middleware/uploadMiddleware");
+const { singleDocument } = require("../middleware/memoryUpload");
+const { logout } = require("../Controllers/authController");
 
 router.get("/", protect, adminOnly, getUsers);
 router.get("/leaderboard", protect, getLeaderboard);
-router.get("/:id", getUserById);
+router.get("/:id", protect, getUserById);
 
 // Update Profile Image
 router.put(
   "/profile-image/:id",
   protect,
+  selfOrAdmin("id"),
   upload.single("image"),
   updateProfileImage,
 );
 
 // ✅ PUT ROUTE
-router.put("/:id", protect, updateUser);
+router.put("/:id", protect, selfOrAdmin("id"), validate(schemas.updateUser), updateUser);
 
 // ✅ DELETE ROUTE
 router.delete("/:id", protect, adminOnly, requireAdmin2FA, deleteUser);
@@ -40,8 +45,10 @@ router.delete("/:id", protect, adminOnly, requireAdmin2FA, deleteUser);
 router.post("/contact-user", protect, adminOnly, contactUser);
 
 // ✅ CONTACT SUPPORT ROUTE (User -> Admin)
-router.post("/contact-support", protect, upload.single("attachment"), contactSupport);
+// Attachments are emailed from memory and never stored
+router.post("/contact-support", protect, ...singleDocument("attachment"), contactSupport);
 
-router.post("/logout", logoutUser);
+// Kept for older clients; same as /api/auth/logout
+router.post("/logout", logout);
 
 module.exports = router;

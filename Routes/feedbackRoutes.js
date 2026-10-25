@@ -7,6 +7,7 @@ const {
   getFeedbackStats,
   deleteFeedback,
 } = require("../Controllers/feedbackController");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -14,10 +15,10 @@ const router = express.Router();
 router.post("/", submitFeedback);
 
 // Admin routes
-router.get("/", getFeedback);
-router.get("/stats", getFeedbackStats);
-router.get("/:id", getFeedbackById);
-router.put("/:id", updateFeedback);
-router.delete("/:id", deleteFeedback);
+router.get("/", protect, adminOnly, getFeedback);
+router.get("/stats", protect, adminOnly, getFeedbackStats);
+router.get("/:id", protect, adminOnly, getFeedbackById);
+router.put("/:id", protect, adminOnly, updateFeedback);
+router.delete("/:id", protect, adminOnly, deleteFeedback);
 
 module.exports = router;

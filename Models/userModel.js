@@ -46,6 +46,15 @@ const userSchema = new mongoose.Schema(
       default: 10000, // $10,000 virtual money
       min: 0,
     },
+    lastResetAt: {
+      type: Date,
+    },
+    // Bumped inside trading transactions so concurrent ones for the same user
+    // conflict and retry instead of both passing the same balance/holdings check
+    lockVersion: {
+      type: Number,
+      default: 0,
+    },
     lastLogin: {
       type: Date,
       default: Date.now,
@@ -58,9 +67,28 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Legacy plaintext admin 2FA secret; migrated to twoFactorSecret on next enrollment
     adminTotpSecret: {
-      type: Object, // Stores ASCII, Hex, Base32, OTPAuth URL
-      select: false, // Do not return by default
+      type: Object,
+      select: false,
+    },
+    // Authenticator-app 2FA (any role). Secrets are AES-GCM encrypted.
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      select: false,
+    },
+    twoFactorPendingSecret: {
+      type: String,
+      select: false,
+    },
+    // Embedded in every token; bumping it revokes all of the user's sessions
+    tokenVersion: {
+      type: Number,
+      default: 0,
     },
     // Password Reset Fields
     resetPasswordToken: {
@@ -71,20 +99,39 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
-    // OTP Fields for Email Verification / 2FA
-    otp: {
-      type: String,
-      select: false,
-    },
-    otpExpires: {
-      type: Date,
-      select: false,
-    },
   },
   { timestamps: true },
 );
 
 // Index for password reset token
 userSchema.index({ resetPasswordToken: 1 });
+
+// Secrets never leave the server; KYC id numbers are masked to the last 4 chars
+const SECRET_FIELDS = [
+  "password",
+  "resetPasswordToken",
+  "resetPasswordExpires",
+  "adminTotpSecret",
+  "twoFactorSecret",
+  "twoFactorPendingSecret",
+  "tokenVersion",
+  "lockVersion",
+  "__v",
+];
+
+userSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    SECRET_FIELDS.forEach((field) => delete ret[field]);
+    if (ret.kycData) {
+      if (ret.kycData.idNumber) {
+        ret.kycData.idNumber = `••••${String(ret.kycData.idNumber).slice(-4)}`;
+      }
+      // The storage reference is internal; admins fetch the file via /api/kyc/review
+      ret.kycData.hasDocument = !!ret.kycData.documentImage;
+      delete ret.kycData.documentImage;
+    }
+    return ret;
+  },
+});
 
 module.exports = mongoose.model("User", userSchema);

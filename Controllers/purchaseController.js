@@ -1,7 +1,12 @@
 const PurchasedCoin = require("../Models/PurchasedCoin");
 const Transaction = require("../Models/Transaction");
 const User = require("../Models/userModel");
-const { executeBuy, executeSell } = require("../utils/transactionHelpers");
+const FrozenCoin = require("../Models/frozenCoinModel");
+const Order = require("../Models/Order");
+const { executeBuy, executeSell, runInTransaction } = require("../utils/transactionHelpers");
+const { ACTIVE_STATUSES } = require("../utils/orderLocks");
+const { resolveCoin } = require("../services/coinRegistry");
+const tradingEngine = require("../services/tradingEngine");
 
 // GET /api/purchases/:user_id - Get user's purchased coins
 exports.getUserPurchases = async (req, res) => {
@@ -24,19 +29,33 @@ exports.getUserPurchases = async (req, res) => {
   }
 };
 
+// Business-rule failures from the transaction helpers are client errors, not 500s
+const CLIENT_ERRORS = [
+  "Insufficient balance",
+  "No holdings found for this coin",
+  "Insufficient coin quantity",
+];
+const isClientError = (err) =>
+  CLIENT_ERRORS.some((msg) => err.message && err.message.startsWith(msg));
+
+// Resolve the coin server-side. For sells, fall back to the symbol stored on the
+// user's holding so coins outside the registry can still be closed out.
+const resolveTradableCoin = async (coinId, userId) => {
+  const coin = await resolveCoin(coinId);
+  if (coin || !userId) return coin;
+  const holding = await PurchasedCoin.findOne({ user_id: userId, coin_id: coinId });
+  if (!holding) return null;
+  const symbol = holding.coinSymbol.toLowerCase();
+  return { coinId, symbol, name: holding.coinName, pair: `${symbol}usdt` };
+};
+
 // POST /api/purchases/buy - Buy coins using virtual wallet
 exports.buyCoin = async (req, res) => {
-  const {
-    user_id,
-    coin_id,
-    coin_name,
-    coin_symbol,
-    quantity,
-    image,
-  } = req.body;
+  const { coin_id, coin_name, quantity, image } = req.body;
+  const userId = req.user.id;
 
   try {
-    const user = await User.findOne({ id: user_id });
+    const user = await User.findOne({ id: userId });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (user.isFrozen) {
@@ -45,19 +64,15 @@ exports.buyCoin = async (req, res) => {
         .json({ error: "Account is frozen. Trading disabled." });
     }
 
-    // Server-Side Price Verification
-    const tradingEngine = require("../services/tradingEngine");
-    if (!coin_symbol) {
-      return res.status(400).json({ error: "Coin symbol is required for purchase" });
+    const coin = await resolveTradableCoin(coin_id);
+    if (!coin) {
+      return res.status(400).json({ error: "This coin is not available for trading" });
     }
-    const symbol = coin_symbol.toLowerCase() + "usdt";
+    if (await FrozenCoin.exists({ coinId: coin.coinId })) {
+      return res.status(403).json({ error: "Trading for this coin is currently frozen" });
+    }
 
-    // Ensure we are tracking this symbol
-    tradingEngine.ensureTracking(symbol);
-
-    // Use the robust waitForPrice instead of manual polling
-    const currentPrice = await tradingEngine.waitForPrice(symbol);
-
+    const currentPrice = await tradingEngine.waitForPrice(coin.pair);
     if (!currentPrice) {
       return res.status(400).json({
         error: "Market data currently unavailable for this asset. Please try again.",
@@ -66,8 +81,13 @@ exports.buyCoin = async (req, res) => {
 
     const total_cost = currentPrice * quantity;
     const result = await executeBuy(
-      user_id,
-      { coinId: coin_id, coinName: coin_name, coinSymbol: coin_symbol, image },
+      userId,
+      {
+        coinId: coin.coinId,
+        coinName: coin.name || coin_name,
+        coinSymbol: coin.symbol,
+        image,
+      },
       quantity,
       currentPrice,
       total_cost,
@@ -95,19 +115,20 @@ exports.buyCoin = async (req, res) => {
     });
   } catch (err) {
     console.error("Purchase Error", err);
-    res.status(err.message === "Insufficient balance" ? 400 : 500).json({
+    res.status(isClientError(err) ? 400 : 500).json({
       success: false,
-      error: err.message || "Unable to process purchase",
+      error: isClientError(err) ? err.message : "Unable to process purchase",
     });
   }
 };
 
 // POST /api/purchases/sell - Sell coins
 exports.sellCoin = async (req, res) => {
-  const { user_id, coin_id, coin_symbol, quantity } = req.body;
+  const { coin_id, quantity } = req.body;
+  const userId = req.user.id;
 
   try {
-    const user = await User.findOne({ id: user_id });
+    const user = await User.findOne({ id: userId });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (user.isFrozen) {
@@ -116,26 +137,19 @@ exports.sellCoin = async (req, res) => {
         .json({ error: "Account is frozen. Trading disabled." });
     }
 
-    // Server-Side Price Verification
-    const tradingEngine = require("../services/tradingEngine");
-    if (!coin_symbol) {
-      return res.status(400).json({ error: "Coin symbol is required for sale" });
+    const coin = await resolveTradableCoin(coin_id, userId);
+    if (!coin) {
+      return res.status(400).json({ error: "No holdings found for this coin" });
     }
-    const symbol = coin_symbol.toLowerCase() + "usdt";
 
-    // Ensure we are tracking this symbol
-    tradingEngine.ensureTracking(symbol);
-
-    // Use robust waitForPrice
-    const currentPrice = await tradingEngine.waitForPrice(symbol);
-
+    const currentPrice = await tradingEngine.waitForPrice(coin.pair);
     if (!currentPrice) {
       return res.status(400).json({
         error: "Market data currently unavailable for this asset. Please try again.",
       });
     }
 
-    const result = await executeSell(user_id, coin_id, quantity, currentPrice);
+    const result = await executeSell(userId, coin.coinId, quantity, currentPrice);
 
     res.json({
       success: true,
@@ -149,9 +163,9 @@ exports.sellCoin = async (req, res) => {
     });
   } catch (error) {
     console.error("Error processing sale:", error);
-    res.status(500).json({
+    res.status(isClientError(error) ? 400 : 500).json({
       success: false,
-      error: error.message || "Failed to process sale",
+      error: isClientError(error) ? error.message : "Failed to process sale",
     });
   }
 };
@@ -182,27 +196,55 @@ exports.getUserBalance = async (req, res) => {
   }
 };
 
-// POST /api/purchases/reset-balance - Reset user's virtual balance to 10,000
+const STARTING_BALANCE = 10000;
+const RESET_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+// POST /api/purchases/reset-balance - Reset cash to 10,000 and clear holdings and
+// open orders, at most once per 24 hours
 exports.resetBalance = async (req, res) => {
   try {
-    const { user_id } = req.body;
-    const user = await User.findOne({ id: user_id });
+    const result = await runInTransaction(async (session) => {
+      const user = await User.findOne({ id: req.user.id }).session(session);
+      if (!user) return { status: 404, body: { success: false, error: "User not found" } };
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found",
-      });
-    }
+      const elapsed = user.lastResetAt ? Date.now() - user.lastResetAt.getTime() : Infinity;
+      if (elapsed < RESET_COOLDOWN_MS) {
+        const hours = Math.ceil((RESET_COOLDOWN_MS - elapsed) / (60 * 60 * 1000));
+        return {
+          status: 429,
+          body: {
+            success: false,
+            error: `You can reset your account again in ${hours} hour${hours === 1 ? "" : "s"}`,
+            nextResetAt: new Date(user.lastResetAt.getTime() + RESET_COOLDOWN_MS),
+          },
+        };
+      }
 
-    user.virtualBalance = 10000;
-    await user.save();
+      // A reset is a fresh start: cash, holdings and open orders all go together,
+      // so locked funds and coins can't survive into the new balance.
+      await PurchasedCoin.deleteMany({ user_id: user.id }, { session });
+      await Order.updateMany(
+        { user_id: user.id, status: { $in: ACTIVE_STATUSES } },
+        { status: "cancelled", locked_amount: 0 },
+        { session },
+      );
+      user.virtualBalance = STARTING_BALANCE;
+      user.lastResetAt = new Date();
+      user.lockVersion += 1;
+      await user.save({ session });
 
-    res.json({
-      success: true,
-      message: "Balance reset successfully",
-      newBalance: user.virtualBalance,
+      return {
+        status: 200,
+        body: {
+          success: true,
+          message: "Account reset successfully",
+          newBalance: user.virtualBalance,
+          nextResetAt: new Date(user.lastResetAt.getTime() + RESET_COOLDOWN_MS),
+        },
+      };
     });
+
+    res.status(result.status).json(result.body);
   } catch (err) {
     console.error("Reset balance error:", err);
     res.status(500).json({
@@ -246,6 +288,54 @@ exports.getUserHoldings = async (req, res) => {
       success: false,
       error: "Unable to fetch holdings",
     });
+  }
+};
+
+const PERFORMANCE_RANGES = { "1d": 1, "7d": 7, "30d": 30, "90d": 90 };
+
+// GET /api/purchases/performance/:user_id?range=7d - holdings value history.
+// 1d returns hourly points, longer ranges the last point of each day, plus a
+// live "now" point at the end.
+exports.getPerformance = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const range = PERFORMANCE_RANGES[req.query.range] ? req.query.range : "7d";
+    const since = new Date(Date.now() - PERFORMANCE_RANGES[range] * 24 * 60 * 60 * 1000);
+
+    const PortfolioSnapshot = require("../Models/PortfolioSnapshot");
+    const { valueHoldings } = require("../services/equityService");
+
+    let points;
+    if (range === "1d") {
+      points = await PortfolioSnapshot.find({ user_id, at: { $gte: since } })
+        .sort({ at: 1 })
+        .select("at holdingsValue invested -_id")
+        .lean();
+    } else {
+      points = await PortfolioSnapshot.aggregate([
+        { $match: { user_id, at: { $gte: since } } },
+        { $sort: { at: 1 } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$at" } },
+            at: { $last: "$at" },
+            holdingsValue: { $last: "$holdingsValue" },
+            invested: { $last: "$invested" },
+          },
+        },
+        { $sort: { at: 1 } },
+        { $project: { _id: 0, at: 1, holdingsValue: 1, invested: 1 } },
+      ]);
+    }
+
+    const now = (await valueHoldings([user_id])).get(user_id);
+    if (now) points.push({ at: new Date(), ...now, live: true });
+
+    const first = await PortfolioSnapshot.findOne({ user_id }).sort({ at: 1 }).select("at").lean();
+    res.json({ success: true, range, points, historySince: first?.at || null });
+  } catch (error) {
+    console.error("Error fetching performance:", error);
+    res.status(500).json({ success: false, error: "Unable to fetch performance" });
   }
 };
 

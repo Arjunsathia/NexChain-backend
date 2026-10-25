@@ -20,4 +20,6 @@ const watchListSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+watchListSchema.index({ user_id: 1, id: 1 });
+
 module.exports = mongoose.model("WatchList", watchListSchema);

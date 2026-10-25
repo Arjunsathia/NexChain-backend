@@ -34,7 +34,7 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "filled", "cancelled", "triggered"],
+      enum: ["pending", "triggered", "filled", "cancelled", "failed"],
       default: "pending",
       index: true,
     },
@@ -62,11 +62,19 @@ const orderSchema = new mongoose.Schema(
       type: String, // ID to link OCO pairs
       index: true,
     },
+    // Balance reserved by this order (buy side). For a buy OCO the whole
+    // reservation sits on one leg and the other leg holds 0.
+    locked_amount: {
+      type: Number,
+    },
+    failure_reason: {
+      type: String,
+    },
   },
   { timestamps: true },
 );
 
-// Compound index for the most frequent Trading Engine query
-orderSchema.index({ status: 1, coin_symbol: 1 });
+// Compound index for the Trading Engine query (active orders per symbol, oldest first)
+orderSchema.index({ status: 1, coin_symbol: 1, createdAt: 1 });
 
 module.exports = mongoose.model("Order", orderSchema);

@@ -2,59 +2,77 @@ const User = require("../Models/userModel");
 const OTP = require("../Models/otpModel");
 const { generateOTP, hashOTP } = require("../utils/otpUtils");
 const { sendOTPEmail, sendEmail } = require("../utils/emailService");
-const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const asyncHandler = require("express-async-handler");
-const speakeasy = require("speakeasy");
-const QRCode = require("qrcode");
 const { OAuth2Client } = require("google-auth-library");
 const crypto = require("crypto");
+const twoFactor = require("../services/twoFactor");
+const {
+  issueTokens,
+  clearAuthCookies,
+  sessionUser,
+  verifyAccessToken,
+  verifyRefreshToken,
+} = require("../utils/tokens");
+
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+/** Revokes every outstanding access and refresh token for the user */
+const revokeSessions = (userId) =>
+  User.updateOne({ id: userId }, { $inc: { tokenVersion: 1 } });
+
+/**
+ * Second factor for logins. Returns true when the request may proceed; otherwise
+ * it has already responded (asking for a code, or rejecting a wrong one).
+ */
+const passSecondFactor = async (user, code, res) => {
+  const withSecrets = await User.findOne({ id: user.id }).select(twoFactor.SECRET_SELECT);
+  if (!twoFactor.isEnabled(withSecrets)) return true;
+
+  if (!code) {
+    res.json({
+      success: false,
+      require2FA: true,
+      message: "Enter the 6-digit code from your authenticator app",
+    });
+    return false;
+  }
+  if (!twoFactor.verifyCode(withSecrets, String(code))) {
+    res.status(401).json({ message: "Invalid authentication code", require2FA: true });
+    return false;
+  }
+  return true;
+};
+
+const createEmailOTP = async (email) => {
+  const otp = generateOTP();
+  await OTP.create({
+    email,
+    otpHash: hashOTP(otp, process.env.OTP_SECRET),
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    attemptsLeft: 3,
+  });
+  await sendOTPEmail(email, otp);
+};
 
 /**
  * @desc    Register a new user
  * @route   POST /api/auth/register
  */
 const register = asyncHandler(async (req, res) => {
-  const { name, phone, password, confirm_password, role } = req.body;
-  let { email, user_name } = req.body;
+  const { name, phone, password } = req.body;
+  const email = req.body.email.toLowerCase();
+  const user_name = req.body.user_name.toLowerCase();
 
-  if (
-    !name ||
-    !email ||
-    !phone ||
-    !user_name ||
-    !password ||
-    !confirm_password
-  ) {
-    res.status(400).json({ message: "All fields are required" });
-    return;
-  }
-
-  email = email.toLowerCase();
-  user_name = user_name.toLowerCase();
-
-  if (password !== confirm_password) {
-    res.status(400).json({ message: "Passwords do not match" });
-    return;
-  }
-
-  // Ensure the email alias is not already in use by another account
-  const existingEmail = await User.findOne({ email });
-  if (existingEmail) {
+  if (await User.findOne({ email })) {
     res.status(400).json({ message: "Email already in use" });
     return;
   }
-
-  // Ensure the requested username is available
-  const existingUsername = await User.findOne({ user_name });
-  if (existingUsername) {
+  if (await User.findOne({ user_name })) {
     res.status(400).json({ message: "Username already taken" });
     return;
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await User.create({
     id: uuidv4(),
@@ -62,28 +80,12 @@ const register = asyncHandler(async (req, res) => {
     email,
     phone,
     user_name,
-    password: hashedPassword,
-    role: "user", // CRITICAL FIX: Force role to user to prevent admin spoofing
+    password: await bcrypt.hash(password, 10),
+    role: "user", // never taken from the request
     emailVerified: false,
   });
 
-  // Generate a new OTP and send it via email for account verification
-  const otp = generateOTP();
-  const secret = process.env.OTP_SECRET;
-  if (!secret) {
-    throw new Error("OTP_SECRET not configured");
-  }
-  const otpHash = hashOTP(otp, secret);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  await OTP.create({
-    email,
-    otpHash,
-    expiresAt,
-    attemptsLeft: 3,
-  });
-
-  await sendOTPEmail(email, otp);
+  await createEmailOTP(email);
 
   res.status(201).json({
     success: true,
@@ -97,35 +99,23 @@ const register = asyncHandler(async (req, res) => {
  * @route   POST /api/auth/verify-email-otp
  */
 const verifyEmailOTP = asyncHandler(async (req, res) => {
-  let { email, otp } = req.body;
+  const email = req.body.email.toLowerCase();
+  const otpHash = hashOTP(req.body.otp, process.env.OTP_SECRET);
 
-  if (email) email = email.toLowerCase();
+  const otpRecord = await OTP.findOne({ email, used: false }).sort({ createdAt: -1 });
 
-  const secret = process.env.OTP_SECRET;
-  if (!secret) {
-    throw new Error("OTP_SECRET not configured");
-  }
-  const otpHash = hashOTP(otp, secret);
-
-  const otpRecord = await OTP.findOne({ email, used: false }).sort({
-    createdAt: -1,
-  });
-
-  if (
-    !otpRecord ||
-    new Date() > otpRecord.expiresAt ||
-    otpRecord.attemptsLeft <= 0
-  ) {
+  if (!otpRecord || new Date() > otpRecord.expiresAt || otpRecord.attemptsLeft <= 0) {
     res.status(400).json({ message: "Invalid or expired OTP" });
     return;
   }
 
-  if (otpRecord.otpHash !== otpHash) {
+  const matches =
+    otpRecord.otpHash.length === otpHash.length &&
+    crypto.timingSafeEqual(Buffer.from(otpRecord.otpHash), Buffer.from(otpHash));
+  if (!matches) {
     otpRecord.attemptsLeft -= 1;
     await otpRecord.save();
-    res
-      .status(400)
-      .json({ message: "Invalid OTP", attemptsLeft: otpRecord.attemptsLeft });
+    res.status(400).json({ message: "Invalid OTP", attemptsLeft: otpRecord.attemptsLeft });
     return;
   }
 
@@ -141,20 +131,16 @@ const verifyEmailOTP = asyncHandler(async (req, res) => {
   user.emailVerified = true;
   await user.save();
 
-  res.json({
-    success: true,
-    message: "Email verified successfully. You can now login.",
-  });
+  res.json({ success: true, message: "Email verified successfully. You can now login." });
 });
 
 /**
- * @desc    Standard Login (Password only)
+ * @desc    Login with email or username + password (+ 2FA code when enabled)
  * @route   POST /api/auth/login
  */
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-
-  const identifier = email.toLowerCase();
+  const { password, totp } = req.body;
+  const identifier = req.body.email.toLowerCase();
 
   const user = await User.findOne({
     $or: [{ email: identifier }, { user_name: identifier }],
@@ -162,6 +148,7 @@ const login = asyncHandler(async (req, res) => {
 
   if (
     !user ||
+    user.isDeleted ||
     !user.password ||
     !(await bcrypt.compare(password, user.password))
   ) {
@@ -169,270 +156,215 @@ const login = asyncHandler(async (req, res) => {
     return;
   }
 
-  // Prevent login if the user account has been frozen by an admin
   if (user.isFrozen) {
-    res.status(403).json({
-      message: "Your account has been frozen. Please contact support.",
-    });
+    res.status(403).json({ message: "Your account has been frozen. Please contact support." });
     return;
   }
 
   if (!user.emailVerified) {
-    res
-      .status(403)
-      .json({ message: "Email not verified. Please verify your email first." });
+    res.status(403).json({ message: "Email not verified. Please verify your email first." });
     return;
   }
+
+  if (!(await passSecondFactor(user, totp, res))) return;
 
   user.lastLogin = new Date();
   await user.save();
 
-  // Issue access and refresh tokens for the session
-  const accessToken = jwt.sign(
-    { id: user.id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: "15m" },
-  );
-
-  const refreshToken = jwt.sign(
-    { id: user.id },
-    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-    { expiresIn: "30d" },
-  );
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
-
-  res.cookie("token", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    maxAge: 15 * 60 * 1000,
-  });
-
-  res.json({
-    success: true,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      user_name: user.user_name,
-      image: user.image,
-    },
-    accessToken,
-  });
+  const accessToken = issueTokens(res, user);
+  res.json({ success: true, user: sessionUser(user), accessToken });
 });
 
+/**
+ * @desc    Exchange the refresh cookie for a new access token (rotates the cookie)
+ * @route   POST /api/auth/refresh
+ */
 const refresh = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
-  if (!refreshToken) {
-    res.status(401).json({ message: "No refresh token" });
+  const decoded = verifyRefreshToken(req.cookies.refreshToken);
+  if (!decoded) {
+    clearAuthCookies(res);
+    res.status(401).json({ message: "Session expired, please log in again" });
     return;
   }
 
-  try {
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-    );
-
-    if (!decoded || typeof decoded === "string" || !decoded.id) {
-      res.status(401).json({ message: "Invalid token payload" });
-      return;
-    }
-
-    const user = await User.findOne({ id: decoded.id });
-    if (!user) {
-      res.status(401).json({ message: "User not found" });
-      return;
-    }
-
-    const accessToken = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" },
-    );
-    res.cookie("token", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      maxAge: 15 * 60 * 1000,
-    });
-    res.json({ accessToken });
-    return;
-  } catch {
-    res.status(401).json({ message: "Invalid refresh token" });
+  const user = await User.findOne({ id: decoded.id });
+  if (
+    !user ||
+    user.isDeleted ||
+    user.isFrozen ||
+    (user.tokenVersion || 0) !== decoded.tv
+  ) {
+    clearAuthCookies(res);
+    res.status(401).json({ message: "Session expired, please log in again" });
     return;
   }
+
+  const accessToken = issueTokens(res, user);
+  res.json({ success: true, accessToken, user: sessionUser(user) });
 });
 
 /**
  * @typedef {import("express").Request & { user: { id: string, role: string } }} AuthRequest
  */
 
-/**
- * @desc    Setup TOTP (Generate secret & QR)
- * @route   GET /api/auth/setup-totp
- */
-const setupTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
-  // Check if user has admin privileges
-  if (req.user.role !== "admin") {
-    res.status(403).json({ message: "Access denied" });
-    return;
-  }
+const loadWithSecrets = (req) =>
+  User.findOne({ id: req.user.id }).select(twoFactor.SECRET_SELECT);
 
-  const user = await User.findOne({ id: req.user.id });
+/**
+ * @desc    Start authenticator-app enrollment. Replacing an active setup needs a current code.
+ * @route   POST /api/2fa/setup, GET /api/auth/setup-totp (admin settings page)
+ */
+const setup2FA = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
+  const user = await loadWithSecrets(req);
   if (!user) {
     res.status(404).json({ message: "User not found" });
     return;
   }
 
-  // Generate TOTP secret
-  const secret = speakeasy.generateSecret({
-    name: `NexChain Admin (${user.email})`,
-  });
-
-  // Generate QR Code for client app scanning
-  try {
-    const data_url = await QRCode.toDataURL(secret.otpauth_url);
-    // Send temporary secret to client for verification (app scanning)
-    res.json({
-      message: "Scan this QR code with Google Authenticator",
-      secret: secret.base32, // User needs this if they can't scan
-      qrCode: data_url,
+  const currentCode = req.body?.currentToken || req.query?.currentToken;
+  if (twoFactor.isEnabled(user) && !twoFactor.verifyCode(user, String(currentCode || ""))) {
+    res.status(400).json({
+      message: "2FA is already enabled. Enter a current code to replace it.",
+      error: "2FA is already enabled. Enter a current code to replace it.",
     });
-  } catch (err) {
-    res.status(500).json({ message: "Error generating QR code" });
+    return;
   }
+
+  const { secret, qrCode } = await twoFactor.startSetup(user);
+  res.json({
+    success: true,
+    message: "Scan this QR code with your authenticator app",
+    secret, // for manual entry if the QR can't be scanned
+    qrCode,
+  });
 });
 
 /**
- * @desc    Verify TOTP and Enable
- * @route   POST /api/auth/verify-totp
+ * @desc    Confirm enrollment with a code from the new secret (or re-check an active one)
+ * @route   POST /api/2fa/verify, POST /api/auth/verify-totp (admin settings page)
  */
-const verifyTOTP = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
-  const { token, secret } = req.body; // Secret comes from client (setup flow) OR we use stored if just re-verifying
-
-  if (req.user.role !== "admin") {
-    res.status(403).json({ message: "Access denied" });
+const verify2FA = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
+  const code = String(req.body.token || "");
+  const user = await loadWithSecrets(req);
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
     return;
   }
 
-  // If enabling (secret provided in body), use that. Else use user.adminTotpSecret
-  let secretToVerify = secret;
-
-  const user = await User.findOne({ id: req.user.id }).select(
-    "+adminTotpSecret",
-  );
-
-  if (!secret && user.adminTotpSecret) {
-    secretToVerify = user.adminTotpSecret.base32;
-  }
-
-  if (!secretToVerify) {
-    res.status(400).json({ message: "No TOTP secret provided or found" });
-    return;
-  }
-
-  const verified = speakeasy.totp.verify({
-    secret: secretToVerify,
-    encoding: "base32",
-    token: token,
-  });
-
-  if (verified) {
-    // If this was a setup (secret provided), save it now
-    if (secret) {
-      // Store the secret after successful verification
-      user.adminTotpSecret = { base32: secret };
-      await user.save();
+  if (user.twoFactorPendingSecret) {
+    if (await twoFactor.confirmSetup(user, code)) {
       res.json({ success: true, message: "2FA Enabled successfully" });
     } else {
-      res.json({ success: true, message: "Code valid" });
+      res.status(400).json({ success: false, message: "Invalid Authenticator Code", error: "Invalid Authenticator Code" });
     }
-  } else {
-    res
-      .status(400)
-      .json({ success: false, message: "Invalid Authenticator Code" });
+    return;
   }
+
+  if (twoFactor.isEnabled(user) && twoFactor.verifyCode(user, code)) {
+    res.json({ success: true, message: "Code valid" });
+    return;
+  }
+  res.status(400).json({ success: false, message: "Invalid Authenticator Code", error: "Invalid Authenticator Code" });
 });
+
+/**
+ * @desc    Turn off 2FA (requires a current code)
+ * @route   POST /api/2fa/disable
+ */
+const disable2FA = asyncHandler(async (/** @type {AuthRequest} */ req, res) => {
+  const user = await loadWithSecrets(req);
+  if (!user || !twoFactor.isEnabled(user)) {
+    res.status(400).json({ message: "2FA is not enabled", error: "2FA is not enabled" });
+    return;
+  }
+  if (!twoFactor.verifyCode(user, String(req.body.token || ""))) {
+    res.status(400).json({ message: "Invalid Authenticator Code", error: "Invalid Authenticator Code" });
+    return;
+  }
+  await twoFactor.disable(user);
+  res.json({ success: true, message: "2FA disabled" });
+});
+
+/**
+ * Verifies a Google access token was issued to *this* app before trusting the
+ * profile behind it; otherwise a token from any other Google app would log in.
+ */
+const getGoogleProfileFromAccessToken = async (accessToken) => {
+  const infoRes = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`,
+  );
+  if (!infoRes.ok) return null;
+  const info = await infoRes.json();
+  const audience = process.env.GOOGLE_CLIENT_ID;
+  if (info.aud !== audience && info.azp !== audience) return null;
+
+  const profileRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!profileRes.ok) return null;
+  const profile = await profileRes.json();
+  if (profile.sub !== info.sub) return null;
+  return profile;
+};
 
 /**
  * @desc    Google Login
  * @route   POST /api/auth/google
  */
 const googleLogin = asyncHandler(async (req, res) => {
-  const { credential, googleAccessToken } = req.body;
+  const { credential, googleAccessToken, totp } = req.body;
 
-  let email, name, picture, email_verified;
-
-  if (googleAccessToken) {
-    // Access Token Flow (Custom Button)
-    const response = await fetch(
-      "https://www.googleapis.com/oauth2/v3/userinfo",
-      {
-        headers: { Authorization: `Bearer ${googleAccessToken}` },
-      },
-    );
-
-    if (!response.ok) {
-      res.status(400);
-      throw new Error("Failed to fetch Google user info");
+  let profile;
+  if (typeof googleAccessToken === "string" && googleAccessToken) {
+    // Access Token Flow (custom button)
+    profile = await getGoogleProfileFromAccessToken(googleAccessToken);
+  } else if (typeof credential === "string" && credential) {
+    // ID Token Flow (Google button component)
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      profile = ticket.getPayload();
+    } catch {
+      profile = null;
     }
-
-    const data = await response.json();
-    email = data.email;
-    name = data.name;
-    picture = data.picture;
-    email_verified = data.email_verified;
-  } else if (credential) {
-    // ID Token Flow (Google Button Component)
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    email = payload.email;
-    name = payload.name;
-    picture = payload.picture;
-    email_verified = payload.email_verified;
   } else {
-    res.status(400);
-    throw new Error("Google credential or access token is required");
+    res.status(400).json({ message: "Google credential or access token is required" });
+    return;
   }
 
-  if (!email_verified) {
-    res.status(400);
-    throw new Error("Google email not verified");
+  if (!profile) {
+    res.status(401).json({ message: "Google sign-in could not be verified" });
+    return;
+  }
+  const email_verified = profile.email_verified === true || profile.email_verified === "true";
+  if (!email_verified || !profile.email) {
+    res.status(400).json({ message: "Google email not verified" });
+    return;
   }
 
+  const email = profile.email.toLowerCase();
   let user = await User.findOne({ email });
 
   if (user) {
-    // Prevent admins from logging in via Google; they must use password and 2FA
+    // Admins must use password (+ 2FA)
     if (user.role === "admin" || user.role === "superadmin") {
-      res.status(403);
-      throw new Error("Admins must login via password/2FA");
+      res.status(403).json({ message: "Admins must login via password/2FA" });
+      return;
     }
-
-    // Check if the account is frozen
+    if (user.isDeleted) {
+      res.status(403).json({ message: "This account has been deactivated." });
+      return;
+    }
     if (user.isFrozen) {
-      res.status(403);
-      throw new Error("Your account has been frozen. Please contact support.");
+      res.status(403).json({ message: "Your account has been frozen. Please contact support." });
+      return;
     }
+    if (!(await passSecondFactor(user, totp, res))) return;
   } else {
-    // Create User
     // Generate a unique, safe username based on the email address
-    const baseName = email
-      .split("@")[0]
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
+    const baseName = email.split("@")[0].replace(/[^a-z0-9]/g, "") || "user";
     let userName = baseName;
     while (await User.findOne({ user_name: userName })) {
       userName = `${baseName}${Math.floor(Math.random() * 1000)}`;
@@ -440,59 +372,21 @@ const googleLogin = asyncHandler(async (req, res) => {
 
     user = await User.create({
       id: uuidv4(),
-      name,
+      name: profile.name || userName,
       email,
       user_name: userName,
       role: "user",
       provider: "google",
       emailVerified: true,
-      image: picture,
+      image: profile.picture,
     });
   }
 
-  // Update last login timestamp
   user.lastLogin = new Date();
   await user.save();
 
-  // Generate tokens for the authenticated session
-  const accessToken = jwt.sign(
-    { id: user.id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: "15m" },
-  );
-  const refreshToken = jwt.sign(
-    { id: user.id },
-    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-    { expiresIn: "30d" },
-  );
-
-  // Set Cookies
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
-
-  res.cookie("token", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    maxAge: 15 * 60 * 1000,
-  });
-
-  res.json({
-    success: true,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      user_name: user.user_name,
-      image: user.image,
-    },
-    accessToken,
-  });
+  const accessToken = issueTokens(res, user);
+  res.json({ success: true, user: sessionUser(user), accessToken });
 });
 
 /**
@@ -500,33 +394,19 @@ const googleLogin = asyncHandler(async (req, res) => {
  * @route   POST /api/auth/resend-otp
  */
 const resendOTP = asyncHandler(async (req, res) => {
-  let { email } = req.body;
-  email = email.toLowerCase();
+  const email = req.body.email.toLowerCase();
 
   const user = await User.findOne({ email });
   if (!user) {
     res.status(404).json({ message: "User not found" });
     return;
   }
-
   if (user.emailVerified) {
     res.status(400).json({ message: "Email already verified" });
     return;
   }
 
-  // Check cooldown? (Optional logic using otpExpires or separate field)
-  // For now, simple regeneration
-  
-  const otp = generateOTP();
-  const secret = process.env.OTP_SECRET;
-  if (!secret) {
-      throw new Error("OTP_SECRET not configured");
-  }
-  const otpHash = hashOTP(otp, secret);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
-  // Check if existing OTP prevents spam (e.g. wait 1 min)
-  // Logic: find latest OTP for this email
+  // One code per minute
   const existingOTP = await OTP.findOne({ email, used: false }).sort({ createdAt: -1 });
   if (existingOTP) {
     const timeDiff = (Date.now() - new Date(existingOTP.createdAt).getTime()) / 1000;
@@ -536,15 +416,7 @@ const resendOTP = asyncHandler(async (req, res) => {
     }
   }
 
-  await OTP.create({
-    email,
-    otpHash,
-    expiresAt,
-    attemptsLeft: 3,
-  });
-
-  await sendOTPEmail(email, otp);
-
+  await createEmailOTP(email);
   res.json({ success: true, message: "OTP resent successfully" });
 });
 
@@ -553,30 +425,20 @@ const resendOTP = asyncHandler(async (req, res) => {
  * @route   POST /api/auth/forgot-password
  */
 const forgotPassword = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const user = await User.findOne({ email: req.body.email.toLowerCase() });
 
-  if (!user) {
-    // Return 200 even if user not found to prevent enumeration
-    // But for UX we often return 404 in dev types. 
-    // Secure Practice: "If that email exists, we sent a link."
-    res.json({ success: true, message: "If registered, a reset link has been sent." });
+  // Same response either way, so the endpoint can't be used to find accounts
+  const genericResponse = { success: true, message: "If registered, a reset link has been sent." };
+  if (!user || user.isDeleted) {
+    res.json(genericResponse);
     return;
   }
 
-  // Generate Reset Token
   const resetToken = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
-
-  user.resetPasswordToken = hashedToken;
+  user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
   user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
   await user.save();
 
-  // Construct Reset URL
-  // Frontend URL usually in env, fallback to localhost
   const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
   const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&id=${user.id}`;
 
@@ -587,15 +449,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
     <p>This link expires in 30 minutes.</p>
   `;
 
-  try {
-    const emailSent = await sendEmail(user.email, "Password Reset Request", message);
-    
-    if (!emailSent) {
-      throw new Error("Email sending failed");
-    }
-
-    res.json({ success: true, message: "Reset link sent to email" });
-  } catch (err) {
+  const emailSent = await sendEmail(user.email, "Password Reset Request", message);
+  if (!emailSent) {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
@@ -603,24 +458,16 @@ const forgotPassword = asyncHandler(async (req, res) => {
     return;
   }
 
+  res.json(genericResponse);
 });
 
 /**
- * @desc    Reset Password
+ * @desc    Reset Password (also signs the user out everywhere)
  * @route   POST /api/auth/reset-password
  */
 const resetPassword = asyncHandler(async (req, res) => {
-  const { token, id, password, confirmPassword } = req.body;
-
-  if (password !== confirmPassword) {
-    res.status(400).json({ message: "Passwords do not match" });
-    return;
-  }
-
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
+  const { token, id, password } = req.body;
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   const user = await User.findOne({
     id,
@@ -636,31 +483,29 @@ const resetPassword = asyncHandler(async (req, res) => {
   user.password = await bcrypt.hash(password, 10);
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
-  
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   await user.save();
 
   res.json({ success: true, message: "Password updated successfully" });
 });
 
 /**
- * @desc    Logout User
- * @route   POST /api/auth/logout
+ * @desc    Logout: revokes the user's sessions and clears the auth cookies
+ * @route   POST /api/auth/logout (also POST /api/users/logout)
  */
-const logout = (req, res) => {
-  res.clearCookie("token", {
-     httpOnly: true,
-     secure: process.env.NODE_ENV === "production",
-     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-  });
-  
-  res.clearCookie("refreshToken", {
-     httpOnly: true,
-     secure: process.env.NODE_ENV === "production",
-     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-  });
+const logout = asyncHandler(async (req, res) => {
+  const bearer = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.split(" ")[1]
+    : null;
+  const decoded =
+    verifyRefreshToken(req.cookies.refreshToken) ||
+    verifyAccessToken(bearer || req.cookies.token);
+
+  if (decoded) await revokeSessions(decoded.id);
+  clearAuthCookies(res);
 
   res.status(200).json({ success: true, message: "Logged out successfully" });
-};
+});
 
 module.exports = {
   register,
@@ -668,10 +513,12 @@ module.exports = {
   login,
   googleLogin,
   refresh,
-  setupTOTP,
-  verifyTOTP,
+  setup2FA,
+  verify2FA,
+  disable2FA,
   resendOTP,
   forgotPassword,
   resetPassword,
-  logout
+  logout,
+  revokeSessions,
 };

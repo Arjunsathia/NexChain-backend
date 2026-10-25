@@ -3,18 +3,59 @@ const PurchasedCoin = require("../Models/PurchasedCoin");
 const Transaction = require("../Models/Transaction");
 const User = require("../Models/userModel");
 const { normalizeCoinImage } = require("./imageUtils");
+const { getLockedSellQuantity } = require("./orderLocks");
 
 /**
- * Helper to execute a Buy Transaction atomically
- * @param {string} userId - User ID
- * @param {Object} coinData - { coinId, coinName, coinSymbol, image }
- * @param {number} quantity - Quantity to buy
- * @param {number} price - Price per unit
- * @param {number} totalCost - Total cost (quantity * price)
- * @param {number} fees - Fees if any
- * @param {boolean} deductBalance - Whether to deduct balance from user
+ * Runs `fn(session)` in a transaction. withTransaction retries on transient
+ * errors (write conflicts, lock timeouts), so `fn` must only write through the session.
  */
-const executeBuy = async (
+const runInTransaction = async (fn) => {
+  const session = await mongoose.startSession();
+  try {
+    let result;
+    await session.withTransaction(async () => {
+      result = await fn(session);
+    });
+    return result;
+  } finally {
+    await session.endSession();
+  }
+};
+
+/**
+ * Writes to the user document so two trading transactions for the same user
+ * conflict (one retries and sees the other's result) instead of both passing
+ * the same holdings check.
+ */
+const lockUser = (session, userId) =>
+  User.updateOne({ id: userId }, { $inc: { lockVersion: 1 } }, { session });
+
+/**
+ * Atomically changes a balance. Debits only succeed if the balance covers them.
+ * @returns {Promise<number>} the new balance
+ */
+const adjustBalance = async (session, userId, amount) => {
+  const filter = { id: userId };
+  if (amount < 0) filter.virtualBalance = { $gte: -amount };
+
+  const user = await User.findOneAndUpdate(
+    filter,
+    { $inc: { virtualBalance: amount, lockVersion: 1 } },
+    { session, new: true },
+  );
+  if (!user) {
+    const exists = await User.exists({ id: userId }).session(session);
+    throw new Error(exists ? "Insufficient balance" : "User not found");
+  }
+  return user.virtualBalance;
+};
+
+/**
+ * Buy inside an existing transaction.
+ * @param {boolean} deductBalance false when the funds were already locked by an order
+ */
+const buyInSession = async (
+  session,
   userId,
   coinData,
   quantity,
@@ -23,216 +64,166 @@ const executeBuy = async (
   fees,
   deductBalance = true,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const { coinId, coinName, coinSymbol, image: rawImage } = coinData;
+  const image = normalizeCoinImage(rawImage);
 
-  try {
-    const { coinId, coinName, coinSymbol, image: rawImage } = coinData;
-    const image = normalizeCoinImage(rawImage);
+  const newBalance = deductBalance
+    ? await adjustBalance(session, userId, -totalCost)
+    : undefined;
 
-    let user;
-    if (deductBalance) {
-      user = await User.findOne({ id: userId }).session(session);
-      if (!user) throw new Error("User not found");
+  // Merge into the user's existing holding for this coin, if any
+  let purchasedCoin = await PurchasedCoin.findOne({
+    user_id: userId,
+    coin_id: coinId,
+  }).session(session);
 
-      if (user.virtualBalance < totalCost) {
-        throw new Error("Insufficient balance");
-      }
-      user.virtualBalance -= totalCost;
-      await user.save({ session });
-    }
-
-    // Check if user already owns this coin
-    let purchasedCoin = await PurchasedCoin.findOne({
-      user_id: userId,
-      coin_id: coinId,
-    }).session(session);
-
-    if (purchasedCoin) {
-      // Update existing record (Merge)
-      purchasedCoin.quantity += quantity;
-      purchasedCoin.totalCost += totalCost;
-      // Update average price
-      purchasedCoin.coinPriceUSD =
-        purchasedCoin.totalCost / purchasedCoin.quantity;
-      purchasedCoin.image = image;
-      purchasedCoin.purchaseDate = new Date();
-      await purchasedCoin.save({ session });
-    } else {
-      // Create new purchase record
-      const [newCoin] = await PurchasedCoin.create(
-        [
-          {
-            user_id: userId,
-            coin_id: coinId,
-            coinName,
-            coinSymbol,
-            coinPriceUSD: price,
-            quantity,
-            totalCost,
-            fees: fees || 0,
-            image,
-            purchaseDate: new Date(),
-          },
-        ],
-        { session },
-      );
-      purchasedCoin = newCoin;
-    }
-
-    // Create transaction record
-    await Transaction.create(
+  if (purchasedCoin) {
+    purchasedCoin.quantity += quantity;
+    purchasedCoin.totalCost += totalCost;
+    purchasedCoin.coinPriceUSD = purchasedCoin.totalCost / purchasedCoin.quantity;
+    purchasedCoin.image = image;
+    purchasedCoin.purchaseDate = new Date();
+    await purchasedCoin.save({ session });
+  } else {
+    [purchasedCoin] = await PurchasedCoin.create(
       [
         {
           user_id: userId,
           coin_id: coinId,
           coinName,
           coinSymbol,
-          type: "buy",
+          coinPriceUSD: price,
           quantity,
-          price,
-          totalValue: totalCost,
+          totalCost,
           fees: fees || 0,
           image,
-          transactionDate: new Date(),
-          purchaseId: purchasedCoin._id,
+          purchaseDate: new Date(),
         },
       ],
       { session },
     );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return {
-      success: true,
-      purchasedCoin,
-      newBalance: user ? user.virtualBalance : undefined,
-    };
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
   }
+
+  await Transaction.create(
+    [
+      {
+        user_id: userId,
+        coin_id: coinId,
+        coinName,
+        coinSymbol,
+        type: "buy",
+        quantity,
+        price,
+        totalValue: totalCost,
+        fees: fees || 0,
+        image,
+        transactionDate: new Date(),
+        purchaseId: purchasedCoin._id,
+      },
+    ],
+    { session },
+  );
+
+  return { success: true, purchasedCoin, newBalance };
 };
 
 /**
- * Helper to execute a Sell Transaction atomically
- * @param {string} userId - User ID
- * @param {string} coinId - Coin ID
- * @param {number} quantity - Quantity to sell
- * @param {number} price - Price per unit
+ * Sell inside an existing transaction. Coins reserved by open sell orders can't
+ * be sold, except by the order (or OCO group) passed in `exclude`.
+ * @param {{ orderId?: any, ocoGroupId?: string }} [exclude]
  */
-const executeSell = async (userId, coinId, quantity, price) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+const sellInSession = async (session, userId, coinId, quantity, price, exclude = {}) => {
+  const purchases = await PurchasedCoin.find({
+    user_id: userId,
+    coin_id: coinId,
+  })
+    .sort({ purchaseDate: 1 })
+    .session(session);
 
-  try {
-    // Find user's purchases for this coin
-    const purchases = await PurchasedCoin.find({
-      user_id: userId,
-      coin_id: coinId,
-    })
-      .sort({ purchaseDate: 1 })
-      .session(session);
-
-    if (purchases.length === 0) {
-      throw new Error("No holdings found for this coin");
-    }
-
-    // Calculate total available quantity
-    const totalAvailable = purchases.reduce((sum, p) => sum + p.quantity, 0);
-
-    // Use a small epsilon for float comparison safety
-    if (totalAvailable < quantity - 0.00000001) {
-      throw new Error(
-        `Insufficient coin quantity. Owned: ${totalAvailable}, Trying to sell: ${quantity}`,
-      );
-    }
-
-    const saleAmount = quantity * price;
-
-    // Add to user's wallet
-    const user = await User.findOne({ id: userId }).session(session);
-    if (!user) throw new Error("User not found");
-
-    user.virtualBalance += saleAmount;
-    await user.save({ session });
-
-    // FIFO Logic
-    let remainingToSell = quantity;
-    const updatedPurchases = [];
-    const deletedPurchases = [];
-
-    // We need coin details for transaction record, get from first purchase
-    const firstPurchase = purchases[0];
-    const coinName = firstPurchase.coinName;
-    const coinSymbol = firstPurchase.coinSymbol;
-    const image = normalizeCoinImage(firstPurchase.image);
-
-    for (let purchase of purchases) {
-      if (remainingToSell <= 0) break;
-
-      const sellQuantity = Math.min(purchase.quantity, remainingToSell);
-
-      // Update purchase
-      const averageCost = purchase.totalCost / purchase.quantity;
-      purchase.quantity -= sellQuantity;
-      purchase.totalCost -= sellQuantity * averageCost;
-
-      if (purchase.quantity <= 0.00000001) {
-        deletedPurchases.push(purchase._id);
-      } else {
-        await purchase.save({ session });
-        updatedPurchases.push(purchase);
-      }
-
-      remainingToSell -= sellQuantity;
-    }
-
-    // Delete fully sold purchases
-    if (deletedPurchases.length > 0) {
-      await PurchasedCoin.deleteMany(
-        { _id: { $in: deletedPurchases } },
-        { session },
-      );
-    }
-
-    // Create transaction record
-    await Transaction.create(
-      [
-        {
-          user_id: userId,
-          coin_id: coinId,
-          coinName,
-          coinSymbol,
-          type: "sell",
-          quantity,
-          price,
-          totalValue: saleAmount,
-          fees: 0,
-          image,
-          transactionDate: new Date(),
-        },
-      ],
-      { session },
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return {
-      success: true,
-      newBalance: user.virtualBalance,
-      saleAmount,
-      deletedPurchases, // Now returning IDs
-      updatedPurchases, // Now returning full objects
-    };
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
+  if (purchases.length === 0) {
+    throw new Error("No holdings found for this coin");
   }
+
+  const totalOwned = purchases.reduce((sum, p) => sum + p.quantity, 0);
+  const reserved = await getLockedSellQuantity(userId, coinId, session, exclude);
+  const available = totalOwned - reserved;
+
+  // Small epsilon for float comparison safety
+  if (available < quantity - 0.00000001) {
+    throw new Error(
+      reserved > 0
+        ? `Insufficient coin quantity. Available: ${available} (${reserved} reserved by open sell orders), trying to sell: ${quantity}`
+        : `Insufficient coin quantity. Owned: ${totalOwned}, trying to sell: ${quantity}`,
+    );
+  }
+
+  const saleAmount = quantity * price;
+  const newBalance = await adjustBalance(session, userId, saleAmount);
+
+  // Older data can hold several lots per coin; consume them oldest first
+  let remainingToSell = quantity;
+  const updatedPurchases = [];
+  const deletedPurchases = [];
+  const { coinName, coinSymbol } = purchases[0];
+  const image = normalizeCoinImage(purchases[0].image);
+
+  for (const purchase of purchases) {
+    if (remainingToSell <= 0) break;
+
+    const sellQuantity = Math.min(purchase.quantity, remainingToSell);
+    const averageCost = purchase.totalCost / purchase.quantity;
+    purchase.quantity -= sellQuantity;
+    purchase.totalCost -= sellQuantity * averageCost;
+
+    if (purchase.quantity <= 0.00000001) {
+      deletedPurchases.push(purchase._id);
+    } else {
+      await purchase.save({ session });
+      updatedPurchases.push(purchase);
+    }
+
+    remainingToSell -= sellQuantity;
+  }
+
+  if (deletedPurchases.length > 0) {
+    await PurchasedCoin.deleteMany({ _id: { $in: deletedPurchases } }, { session });
+  }
+
+  await Transaction.create(
+    [
+      {
+        user_id: userId,
+        coin_id: coinId,
+        coinName,
+        coinSymbol,
+        type: "sell",
+        quantity,
+        price,
+        totalValue: saleAmount,
+        fees: 0,
+        image,
+        transactionDate: new Date(),
+      },
+    ],
+    { session },
+  );
+
+  return { success: true, newBalance, saleAmount, deletedPurchases, updatedPurchases };
 };
 
-module.exports = { executeBuy, executeSell };
+/** Market buy in its own transaction (same signature as before) */
+const executeBuy = (...args) => runInTransaction((session) => buyInSession(session, ...args));
+
+/** Market sell in its own transaction (same signature as before) */
+const executeSell = (userId, coinId, quantity, price) =>
+  runInTransaction((session) => sellInSession(session, userId, coinId, quantity, price));
+
+module.exports = {
+  runInTransaction,
+  lockUser,
+  adjustBalance,
+  buyInSession,
+  sellInSession,
+  executeBuy,
+  executeSell,
+};

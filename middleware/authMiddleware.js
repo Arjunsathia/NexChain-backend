@@ -1,106 +1,93 @@
-const jwt = require("jsonwebtoken");
-const speakeasy = require("speakeasy");
 const User = require("../Models/userModel");
+const { verifyAccessToken } = require("../utils/tokens");
+const twoFactor = require("../services/twoFactor");
 
-const protect = (req, res, next) => {
+/**
+ * Accepts a Bearer access token (or the httpOnly `token` cookie) and checks it
+ * against the database, so logout, password changes, freezes and role changes
+ * take effect immediately. req.user.role always comes from the database.
+ */
+const protect = async (req, res, next) => {
   let token;
-
-  // Check for Bearer token in the Authorization header FIRST
-
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
+  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
     token = req.headers.authorization.split(" ")[1];
-  }
-
-  // Fallback: Attempt to retrieve token from HTTP-only cookies
-  else if (req.cookies && req.cookies.token) {
+  } else if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
   }
 
   if (!token) {
-    return res
-      .status(401)
-      .json({ message: "Not authorized, no token provided" });
+    return res.status(401).json({ message: "Not authorized, no token provided" });
+  }
+
+  const decoded = verifyAccessToken(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (!decoded || typeof decoded === "string") {
-      res.status(401).json({ message: "Invalid token payload" });
-      return;
+    const user = await User.findOne({ id: decoded.id })
+      .select("id role tokenVersion isDeleted")
+      .lean();
+    if (!user || user.isDeleted || (user.tokenVersion || 0) !== decoded.tv) {
+      return res.status(401).json({ message: "Session expired, please log in again" });
     }
 
-    req.user = decoded;
+    req.user = { id: user.id, role: user.role };
     next();
-  } catch {
-    res.status(401).json({ message: "Invalid or expired token" });
+  } catch (error) {
+    next(error);
   }
 };
 
+const isAdmin = (user) =>
+  !!user && (user.role === "admin" || user.role === "superadmin");
+
 const adminOnly = (req, res, next) => {
-  if (
-    req.user &&
-    (req.user.role === "admin" || req.user.role === "superadmin")
-  ) {
+  if (isAdmin(req.user)) {
     next();
   } else {
     res.status(403).json({ message: "Access denied: Admins only" });
   }
 };
 
+// Route param must be the caller's own id, unless the caller is an admin
+const selfOrAdmin =
+  (param = "user_id") =>
+  (req, res, next) => {
+    if (req.user && (req.params[param] === req.user.id || isAdmin(req.user))) {
+      return next();
+    }
+    res.status(403).json({ message: "Access denied" });
+  };
+
 const requireAdmin2FA = async (req, res, next) => {
-  // Ensure the user has administrative privileges first
-  if (
-    !req.user ||
-    (req.user.role !== "admin" && req.user.role !== "superadmin")
-  ) {
+  if (!isAdmin(req.user)) {
     return res.status(403).json({ message: "Access denied: Admins only" });
   }
 
-  // Retrieve the 2FA code from the request headers
   const code = req.headers["x-admin-2fa-code"];
-
   if (!code) {
-    return res.status(403).json({
-      message: "2FA Required",
-      require2FA: true,
-    });
+    return res.status(403).json({ message: "2FA Required", require2FA: true });
   }
 
   try {
-    // Verify the provided TOTP code against the stored secret
-    const user = await User.findOne({ id: req.user.id }).select(
-      "+adminTotpSecret",
-    );
-
-    if (!user || !user.adminTotpSecret || !user.adminTotpSecret.base32) {
+    const user = await User.findOne({ id: req.user.id }).select(twoFactor.SECRET_SELECT);
+    if (!user || !twoFactor.isEnabled(user)) {
       return res.status(400).json({ message: "2FA not set up for this admin" });
     }
-
-    const verified = speakeasy.totp.verify({
-      secret: user.adminTotpSecret.base32,
-      encoding: "base32",
-      token: code,
-      window: 1, // Allow 30s slack
-    });
-
-    if (!verified) {
+    if (!twoFactor.verifyCode(user, String(code))) {
       return res.status(403).json({ message: "Invalid 2FA Code" });
     }
-
     next();
   } catch (error) {
-    console.error("2FA Error:", error);
-    res.status(500).json({ message: "Server error during 2FA check" });
+    next(error);
   }
 };
 
 module.exports = {
   protect,
+  isAdmin,
   adminOnly,
+  selfOrAdmin,
   requireAdmin2FA,
 };

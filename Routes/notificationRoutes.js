@@ -7,12 +7,12 @@ const {
   clearAllNotifications,
   createNotification,
 } = require("../Controllers/notificationController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 router.use(protect); // Protect all routes
 
 router.get("/", getNotifications);
-router.post("/", createNotification); // Optional: for testing or admin use
+router.post("/", adminOnly, createNotification);
 router.put("/:id/read", markAsRead);
 router.delete("/:id", deleteNotification);
 router.delete("/", clearAllNotifications);

@@ -3,6 +3,7 @@ node_modules
 .env.*
 .DS_Store
 uploads/
+private_uploads/
 nexchain-backup
 *.log
 npm-debug.log*

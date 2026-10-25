@@ -3,6 +3,14 @@ const AuditLog = require("../Models/AuditLog");
 const bcrypt = require("bcrypt");
 const { sendEmail } = require("../utils/emailService");
 const Notification = require("../Models/Notification");
+const { isAdmin } = require("../middleware/authMiddleware");
+const { issueTokens } = require("../utils/tokens");
+const escapeHtml = require("../utils/escapeHtml");
+
+const supportInbox = () => process.env.SUPPORT_EMAIL || process.env.EMAIL_USER;
+
+// Fields any logged-in user may see about another user
+const PUBLIC_FIELDS = ["id", "name", "user_name", "image", "role", "createdAt"];
 
 const getUsers = async (req, res) => {
   try {
@@ -13,7 +21,8 @@ const getUsers = async (req, res) => {
     const users = await User.find(filter);
     res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("User Controller Error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -22,9 +31,15 @@ const getUserById = async (req, res) => {
     const { id } = req.params;
     const user = await User.findOne({ id });
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+
+    if (req.user.id === id || isAdmin(req.user)) return res.json(user);
+
+    const publicProfile = {};
+    PUBLIC_FIELDS.forEach((field) => (publicProfile[field] = user[field]));
+    res.json(publicProfile);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("User Controller Error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -52,10 +67,39 @@ const updateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    let revokeSessions = false;
+
+    // An email change on a password account requires the current password,
+    // so a hijacked session can't redirect password resets to a new inbox.
+    const emailChanged =
+      email && email.toLowerCase() !== String(user.email).toLowerCase();
+    if (emailChanged && !isAdmin(req.user)) {
+      if (!user.password) {
+        return res
+          .status(400)
+          .json({ message: "Email is managed by your Google account" });
+      }
+      if (!currentPassword || !(await bcrypt.compare(currentPassword, user.password))) {
+        return res
+          .status(400)
+          .json({ message: "Enter your current password to change your email" });
+      }
+    }
+
+    if (emailChanged && (await User.exists({ email, id: { $ne: user.id } }))) {
+      return res.status(409).json({ message: "Email already in use" });
+    }
+    if (
+      user_name &&
+      user_name !== user.user_name &&
+      (await User.exists({ user_name, id: { $ne: user.id } }))
+    ) {
+      return res.status(409).json({ message: "Username already taken" });
+    }
 
     // Update basic user information
     if (name) user.name = name;
-    if (email) user.email = email;
+    if (emailChanged) user.email = email;
     if (phone) user.phone = phone;
     if (user_name) user.user_name = user_name;
 
@@ -68,10 +112,10 @@ const updateUser = async (req, res) => {
       const targetRole = user.role;
       const isSelf = req.user.id === user.id;
 
-      // Security Check: Prevent modification of the primary system superadmin account
-      if (user.email === "nexchainsystem@gmail.com") {
+      // Superadmin accounts can only be changed by their owner
+      if (targetRole === "superadmin" && !isSelf) {
         return res.status(403).json({
-          error: "Action forbidden: Cannot modify System Super Admin account.",
+          error: "Action forbidden: Super Admin accounts can't be modified by others.",
         });
       }
 
@@ -105,6 +149,7 @@ const updateUser = async (req, res) => {
           // Superadmin can do anything except modify primary superadmin (blocked above)
         }
         user.role = role;
+        revokeSessions = true;
       }
 
       // Handle Account Status (Archive/Freeze)
@@ -127,6 +172,7 @@ const updateUser = async (req, res) => {
 
         if (typeof isFrozen !== "undefined") user.isFrozen = isFrozen;
         if (typeof isDeleted !== "undefined") user.isDeleted = isDeleted;
+        if (isFrozen || isDeleted) revokeSessions = true;
       }
     }
 
@@ -146,10 +192,16 @@ const updateUser = async (req, res) => {
         return res.status(400).json({ message: "Passwords do not match" });
 
       user.password = await bcrypt.hash(pass, 10);
+      revokeSessions = true;
     }
 
-    // Persist changes to database
+    // Role changes, freezes and password changes sign the user out everywhere
+    if (revokeSessions) user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+
+    // Changing your own password keeps this session alive with fresh tokens
+    const accessToken =
+      revokeSessions && req.user.id === user.id ? issueTokens(res, user) : undefined;
 
     // Log this action for auditing purposes
     try {
@@ -189,6 +241,7 @@ const updateUser = async (req, res) => {
 
     res.json({
       message: "Profile updated successfully",
+      accessToken,
       user: {
         id: user.id,
         name: user.name,
@@ -202,7 +255,7 @@ const updateUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Update User Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Failed to update user" });
   }
 };
 
@@ -213,21 +266,23 @@ const deleteUser = async (req, res) => {
     const userToDelete = await User.findOne({ id });
     if (!userToDelete) return res.status(404).json({ error: "User not found" });
 
-    // Security Check: Protect Super Admin accounts from deletion
-    if (
-      userToDelete.role === "admin" &&
-      userToDelete.email === "admin@nexchain.com"
-    ) {
-      // Example hardcoded safety
-      return res.status(403).json({ error: "Cannot delete Root Admin" });
+    if (userToDelete.role === "superadmin") {
+      return res.status(403).json({ error: "Super Admin accounts can't be deleted" });
+    }
+    if (userToDelete.id === req.user.id) {
+      return res.status(403).json({ error: "You can't delete your own account here" });
+    }
+    if (userToDelete.role === "admin" && req.user.role !== "superadmin") {
+      return res.status(403).json({ error: "Only a Super Admin can delete admins" });
     }
 
     userToDelete.isDeleted = true;
+    userToDelete.tokenVersion = (userToDelete.tokenVersion || 0) + 1;
     await userToDelete.save();
 
     // Log this action for auditing purposes
     try {
-      if (req.user && req.user.role === "admin") {
+      if (isAdmin(req.user)) {
         // Find admin's Mongo _id to link in AuditLog
         const adminUser = await User.findOne({ id: req.user.id });
 
@@ -249,7 +304,8 @@ const deleteUser = async (req, res) => {
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("User Controller Error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -293,7 +349,7 @@ const updateProfileImage = async (req, res) => {
     });
   } catch (error) {
     console.error("Update Image Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -326,8 +382,8 @@ const contactUser = async (req, res) => {
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
           <h2 style="color: #4A90E2;">Message from Admin</h2>
-          <p>Hello ${targetUser.name},</p>
-          <p>${message.replace(/\n/g, "<br>")}</p>
+          <p>Hello ${escapeHtml(targetUser.name)},</p>
+          <p>${escapeHtml(message).replace(/\n/g, "<br>")}</p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
           <p style="font-size: 12px; color: #888;">&copy; 2025 NexChain Support</p>
         </div>
@@ -382,7 +438,7 @@ const contactUser = async (req, res) => {
     res.json({ message: "Message sent successfully" });
   } catch (error) {
     console.error("Contact User Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -404,12 +460,12 @@ const contactSupport = async (req, res) => {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
         <h2 style="color: #4A90E2;">New Support Request</h2>
-        <p><strong>From:</strong> ${user.name} (${user.email})</p>
-        <p><strong>User Name:</strong> ${user.name}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>From:</strong> ${escapeHtml(user.name)} (${escapeHtml(user.email)})</p>
+        <p><strong>Username:</strong> ${escapeHtml(user.user_name)}</p>
+        <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <h3 style="color: #333;">Message:</h3>
-        <p style="white-space: pre-wrap;">${message}</p>
+        <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <p style="font-size: 12px; color: #888;">Sent from NexChain Platform</p>
       </div>
@@ -419,14 +475,15 @@ const contactSupport = async (req, res) => {
     let attachments = [];
     if (req.file) {
       attachments.push({
-        filename: req.file.originalname,
-        path: req.file.path, // Works for both Cloudinary URL and local path
+        filename: `attachment.${req.file.detected.ext}`,
+        content: req.file.buffer,
+        contentType: req.file.detected.mime,
       });
     }
 
     // Send email to Super Admin
     const sent = await sendEmail(
-      "nexchainsystem@gmail.com",
+      supportInbox(),
       `Support Request: ${subject}`,
       emailHtml,
       attachments
@@ -453,41 +510,50 @@ const contactSupport = async (req, res) => {
     res.json({ message: "Your support mail has been sent successfully." });
   } catch (error) {
     console.error("Contact Support Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-const logoutUser = (req, res) => {
-  res
-    .clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // 🔐 Set true in production
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    })
-    .json({ message: "Logout successful" });
-};
+const LEADERBOARD_TTL_MS = 60 * 1000;
+const RESET_EXCLUSION_MS = 24 * 60 * 60 * 1000;
+let leaderboardCache = { at: 0, data: null };
 
+// Ranks traders by equity: cash plus holdings at the engine's cached live price
+// (falling back to average cost). Accounts reset in the last 24h are left out.
 const getLeaderboard = async (req, res) => {
   try {
-    // Phase 1: Rank by Virtual Balance (Liquid Cash)
-    // Filter: Only show users who have at least one transaction
-    
-    // Get list of user IDs who have made transactions
+    if (leaderboardCache.data && Date.now() - leaderboardCache.at < LEADERBOARD_TTL_MS) {
+      return res.json(leaderboardCache.data);
+    }
+
     const Transaction = require("../Models/Transaction");
+    const { valueHoldings } = require("../services/equityService");
+
     const activeUserIds = await Transaction.distinct("user_id");
-
-    const users = await User.find({ 
+    const users = await User.find({
       isDeleted: { $ne: true },
-      id: { $in: activeUserIds } // Only users in the transaction list
+      id: { $in: activeUserIds },
+      $or: [
+        { lastResetAt: { $exists: false } },
+        { lastResetAt: null },
+        { lastResetAt: { $lt: new Date(Date.now() - RESET_EXCLUSION_MS) } },
+      ],
     })
-      .sort({ virtualBalance: -1 })
-      .limit(10)
-      .select("name user_name image virtualBalance role id");
+      .select("name user_name image virtualBalance role id")
+      .lean();
 
-    res.json(users);
+    const holdingsValue = await valueHoldings(users.map((u) => u.id));
+
+    const ranked = users
+      .map((u) => ({ ...u, equity: u.virtualBalance + (holdingsValue.get(u.id)?.holdingsValue || 0) }))
+      .sort((a, b) => b.equity - a.equity)
+      .slice(0, 10);
+
+    leaderboardCache = { at: Date.now(), data: ranked };
+    res.json(ranked);
   } catch (error) {
     console.error("Leaderboard Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Failed to load leaderboard" });
   }
 };
 
@@ -497,7 +563,6 @@ module.exports = {
   updateUser,
   updateProfileImage, // Export the new function
   deleteUser,
-  logoutUser,
   contactUser,
   contactSupport,
   getLeaderboard,

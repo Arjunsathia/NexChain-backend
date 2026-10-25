@@ -11,6 +11,19 @@ const WS_CLOSED = 3;
 
 const { CORE_SYMBOLS } = require("../config/coins");
 
+// Binance allows 1024 streams per connection; stay well below it so
+// user-driven lookups can't knock out the whole price feed.
+const MAX_TRACKED_SYMBOLS = 300;
+
+const PRICE_FRESHNESS_MS = 20000;
+const MAX_ORDERS_PER_TICK = 500;
+const EXPECTED_ERRORS = [
+  "Price condition not met",
+  "Stop price not reached",
+  "Order already processed",
+  "No holdings found for this coin",
+];
+
 class TradingEngine {
   constructor() {
     this.prices = {};
@@ -27,24 +40,46 @@ class TradingEngine {
     this.syncWithDatabase().catch(err => console.error("❌ [TRADING ]  Sync Error:", err.message));
 
     // 2. Schedule regular DB syncs
-    cron.schedule("*/30 * * * * *", async () => {
+    this.tasks = [];
+    this.tasks.push(cron.schedule("*/30 * * * * *", async () => {
       try {
         await this.syncWithDatabase();
       } catch (err) {
         console.error("❌ [TRADING ]  Cron Sync Error:", err.message);
       }
-    });
+    }));
 
     // 3. Schedule order execution check
-    cron.schedule("*/5 * * * * *", async () => {
+    this.tasks.push(cron.schedule("*/5 * * * * *", async () => {
       try {
         await this.checkAndExecuteOrders();
       } catch (err) {
         console.error("❌ [TRADING ]  Execution Error:", err.message);
       }
-    });
+    }));
+
+    // 4. Hourly portfolio snapshots for the performance chart
+    this.tasks.push(cron.schedule("2 * * * *", async () => {
+      try {
+        await require("./equityService").snapshotAll();
+      } catch (err) {
+        console.error("❌ [TRADING ]  Snapshot Error:", err.message);
+      }
+    }));
 
     console.log("✅ [TRADING ]  Engine active and running.");
+  }
+
+  /** Stops cron jobs and the price socket (graceful shutdown) */
+  stop() {
+    (this.tasks || []).forEach((task) => task.stop());
+    this.tasks = [];
+    if (this.ws) {
+      const ws = this.ws;
+      this.ws = null; // tells the close handler not to reconnect
+      ws.removeAllListeners();
+      ws.terminate();
+    }
   }
 
   async syncWithDatabase() {
@@ -94,6 +129,7 @@ class TradingEngine {
     if (!symbol) return;
     const s = symbol.toLowerCase();
     if (!this.activeSymbols.has(s)) {
+      if (this.activeSymbols.size >= MAX_TRACKED_SYMBOLS) return;
       console.log(`[TRADING ] 🔍 Request to track ${s}`);
       this.activeSymbols.add(s) ;
       
@@ -234,7 +270,8 @@ class TradingEngine {
     if (this.activeSymbols.size === 0) return;
 
     const streams = [...this.activeSymbols].map(s => `${s}@ticker`).join("/");
-    const url = `wss://stream.binance.com:9443/stream?streams=${streams}`;
+    const wsBase = process.env.BINANCE_WS_URL || "wss://stream.binance.com:9443";
+    const url = `${wsBase}/stream?streams=${streams}`;
 
     this.ws = new WebSocket(url);
 
@@ -270,11 +307,13 @@ class TradingEngine {
       // Avoid log spam if we closed it ourselves via sync
       if (this.ws === null) return; 
 
-      console.log("[TRADING ] 🔌 WebSocket Closed. Reconnecting...");
-      setTimeout(() => {
-        this.reconnectAttempts++;
-        if (this.reconnectAttempts < 5) this.connectWebSocket();
-      }, Math.min(30000, 2000 * Math.pow(2, this.reconnectAttempts))); // Exponential backoff
+      // Never give up: without the feed, prices go stale and orders stop filling.
+      // Exponential backoff capped at 30s, with jitter to avoid reconnect bursts.
+      const delay =
+        Math.min(30000, 2000 * Math.pow(2, this.reconnectAttempts)) + Math.random() * 1000;
+      this.reconnectAttempts++;
+      console.log(`[TRADING ] 🔌 WebSocket Closed. Reconnecting in ${Math.round(delay / 1000)}s...`);
+      setTimeout(() => this.connectWebSocket(), delay);
     });
   }
 
@@ -283,11 +322,22 @@ class TradingEngine {
     this.isProcessing = true;
 
     try {
-      // Find orders that are pending or triggered (waiting for price match)
-      // Limit to 100 to prevent memory bloating per tick if backlog grows
-      const activeOrders = await Order.find({ status: { $in: ["pending", "triggered"] } }).limit(100);
-      
-      // Process in chunks of 10 to avoid overwhelming DB/Event Loop but faster than sequential
+      // Only coins with a fresh price can fill, so only load their orders,
+      // oldest first, so no order starves behind a growing backlog.
+      const freshSymbols = Object.entries(this.prices)
+        .filter(([, p]) => Date.now() - p.timestamp < PRICE_FRESHNESS_MS)
+        .map(([pair]) => pair.replace(/usdt$/, ""));
+      if (freshSymbols.length === 0) return;
+
+      const activeOrders = await Order.find({
+        status: { $in: ["pending", "triggered"] },
+        coin_symbol: { $in: [...freshSymbols, ...freshSymbols.map((s) => s.toUpperCase())] },
+      })
+        .sort({ createdAt: 1 })
+        .limit(MAX_ORDERS_PER_TICK);
+
+      // Process in chunks of 10. Each fill claims its order inside a transaction,
+      // so OCO legs in the same chunk can't both fill.
       const CHUNK_SIZE = 10;
       for (let i = 0; i < activeOrders.length; i += CHUNK_SIZE) {
         const chunk = activeOrders.slice(i, i + CHUNK_SIZE);
@@ -308,8 +358,7 @@ class TradingEngine {
 
     if (!priceData) return;
 
-    // Freshness check: 20 seconds
-    const isFresh = (Date.now() - priceData.timestamp) < 20000;
+    const isFresh = (Date.now() - priceData.timestamp) < PRICE_FRESHNESS_MS;
     if (!isFresh) return;
 
     const currentPrice = priceData.price;
@@ -318,8 +367,8 @@ class TradingEngine {
       // processOrderExecution is now robust but we catch internal errors here to not stop the loop
       await processOrderExecution(order, currentPrice);
     } catch (error) {
-      // Ignore common non-errors
-      if (error.message !== "Price condition not met" && error.message !== "Stop price not reached") {
+      // Ignore common non-errors (failed orders are already marked by the service)
+      if (!EXPECTED_ERRORS.includes(error.message) && !error.message?.startsWith("Insufficient")) {
         console.error(`[Trading Engine] ❌ Execution Error (${order._id}):`, error.message);
       }
     }

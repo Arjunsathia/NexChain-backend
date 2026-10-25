@@ -1,12 +1,16 @@
 {
   "name": "nexchain-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "NexChain API: crypto paper-trading backend",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "jest --runInBand",
+    "seed": "node scripts/seed.js",
+    "audit:balances": "node scripts/audit-balances.js",
+    "migrate:orders": "node scripts/migrate-order-locks.js"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +37,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",
+    "pino-http": "^10.5.0",
     "qrcode": "^1.5.4",
     "speakeasy": "^2.0.0",
     "uuid": "^11.1.0",
@@ -42,6 +47,12 @@
     "@eslint/js": "^9.39.2",
     "eslint": "^9.39.2",
     "globals": "^16.5.0",
-    "nodemon": "^3.1.10"
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.4.3",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.3.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

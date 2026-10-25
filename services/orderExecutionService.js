@@ -1,231 +1,227 @@
 const User = require("../Models/userModel");
+const Order = require("../Models/Order");
 const Notification = require("../Models/Notification");
-const { executeBuy, executeSell } = require("../utils/transactionHelpers");
+const {
+  runInTransaction,
+  adjustBalance,
+  buyInSession,
+  sellInSession,
+} = require("../utils/transactionHelpers");
+const { ACTIVE_STATUSES, getBuyGroupLock, getActiveGroup } = require("../utils/orderLocks");
 const socketService = require("./socketService");
 
+// Errors that mean the order can never fill as placed; it is marked failed
+// (and its funds released) instead of being retried every engine tick.
+const TERMINAL_ERRORS = ["Insufficient coin quantity", "No holdings found for this coin", "Insufficient balance"];
+const isTerminalError = (err) => TERMINAL_ERRORS.some((msg) => err.message?.startsWith(msg));
+
+const notifyUser = async (userId, notification) => {
+  try {
+    const userDoc = await User.findOne({ id: userId }).select("_id");
+    if (userDoc) await Notification.create({ user: userDoc._id, ...notification });
+  } catch (notifyError) {
+    console.error("[Order Service] ⚠️ Notification Error:", notifyError.message);
+  }
+};
+
 /**
- * Core logic for evaluating and executing a pending or triggered order.
+ * Marks the order (and its OCO siblings) failed and releases a buy group's lock.
+ */
+const failOrder = async (order, reason) => {
+  const failed = await runInTransaction(async (session) => {
+    const legs = await getActiveGroup(
+      await Order.findById(order._id).session(session),
+      session,
+    );
+    if (legs.length === 0) return false;
+
+    await Order.updateMany(
+      { _id: { $in: legs.map((leg) => leg._id) }, status: { $in: ACTIVE_STATUSES } },
+      { status: "failed", failure_reason: reason, locked_amount: 0 },
+      { session },
+    );
+    const lock = getBuyGroupLock(legs);
+    if (lock > 0) await adjustBalance(session, order.user_id, lock);
+    return true;
+  });
+  if (!failed) return;
+
+  await notifyUser(order.user_id, {
+    title: "Order Could Not Be Filled",
+    message: `Your ${order.type.toUpperCase()} order for ${order.quantity} ${order.coin_symbol.toUpperCase()} was cancelled: ${reason}`,
+    type: "warning",
+    category: order.category,
+  });
+  socketService.sendToUser(order.user_id, "ORDER_CANCELLED", { orderId: order._id, reason: "FAILED" });
+};
+
+/**
+ * Evaluates a pending or triggered order against a trusted price and executes it
+ * if its condition is met. Safe to call concurrently: the fill claims the order
+ * inside the same transaction, so only one caller can fill it.
  * @param {Object} order - The Mongoose Order document
  * @param {number} current_price - The current market price from a trusted source
- * @returns {Promise<Object>} - Execution result { success, message, order, triggered }
+ * @returns {Promise<Object>} - { success, message, order, triggered? }
  */
 const processOrderExecution = async (order, current_price) => {
-  let executed = false;
-
   // 1. STOP ORDER LOGIC (Trigger Phase)
   if (order.category === "stop_limit" || order.category === "stop_market") {
-    let stopHit = false;
-    
-    // Safety check: ensure stop_price exists
     if (order.stop_price === undefined || order.stop_price === null) {
       throw new Error(`Order ${order._id} stop_limit/stop_market missing stop_price`);
     }
 
-    if (order.type === "buy" && current_price >= order.stop_price) stopHit = true;
-    if (order.type === "sell" && current_price <= order.stop_price) stopHit = true;
+    const stopHit =
+      (order.type === "buy" && current_price >= order.stop_price) ||
+      (order.type === "sell" && current_price <= order.stop_price);
+    if (!stopHit) throw new Error("Stop price not reached");
 
-    if (stopHit) {
-      // HANDLE OCO SIBLING CANCELLATION (If this stop leg triggers, we usually KEEP the other leg until this one FILLS, 
-      // OR we cancel the other leg immediately?
-      // Standard OCO: 
-      // - If Stop Triggered -> It becomes a Limit/Market Order. The OCO link usually remains until FILL.
-      // - BUT commonly: If Stop Limit is triggered, the Limit (TP) leg remains active until the Stop Limit actually FILLS? 
-      //   Actually no, usually one CANCELS the other immediately upon "activation" or "fill". 
-      //   Binance: "When one of them is executed, the other one is automatically canceled."
-      //   If Stop Limit is triggered, it places a limit order. Does the TP limit order disappear? 
-      //   Usually: NO. They coexist until one FILLS. 
-      //   However, for Stop-Market, it executes immediately.
-      //   To simplify: We will cancel sibling ONLY ON FILL.
+    // Stop-limit becomes an active limit order; OCO siblings stay until a leg fills
+    if (order.category === "stop_limit") {
+      const triggered = await Order.findOneAndUpdate(
+        { _id: order._id, status: "pending", category: "stop_limit" },
+        { category: "limit", status: "triggered" },
+        { new: true },
+      );
+      if (!triggered) throw new Error("Order already processed");
 
-      if (order.category === "stop_market") {
-        executed = true; // Execute immediately as market price
-      } else {
-        // Convert to Limit Order and set status to triggered
-        order.category = "limit";
-        order.status = "triggered";
-        await order.save();
+      await notifyUser(order.user_id, {
+        title: "Stop Order Triggered",
+        message: `The stop price for your ${order.coin_symbol.toUpperCase()} order was hit. Your limit order is now active at $${triggered.limit_price.toLocaleString()}.`,
+        type: "info",
+        category: triggered.category,
+      });
+      socketService.sendToUser(order.user_id, "ORDER_TRIGGERED", {
+        orderId: order._id,
+        symbol: order.coin_symbol,
+        type: order.type,
+        limit_price: triggered.limit_price,
+      });
 
-        // Create persistent notification
-        try {
-          const userDoc = await User.findOne({ id: order.user_id });
-          if (userDoc) {
-            await Notification.create({
-              user: userDoc._id,
-              title: "Stop Order Triggered",
-              message: `The stop price for your ${order.coin_symbol.toUpperCase()} order was hit. Your limit order is now active at $${order.limit_price.toLocaleString()}.`,
-              type: "info",
-              category: order.category
-            });
-          }
-        } catch (notifyError) {
-          console.error("[Order Service] ⚠️ Notification Error:", notifyError.message);
-        }
-
-        // Notify via WebSocket
-        socketService.sendToUser(order.user_id, "ORDER_TRIGGERED", {
-          orderId: order._id,
-          symbol: order.coin_symbol,
-          type: order.type,
-          limit_price: order.limit_price
-        });
-
-        return {
-          success: true,
-          message: "Stop Limit Triggered - Order is now active Limit",
-          order,
-          triggered: true
-        };
-      }
-    } else {
-      // If we are here, stop logic didn't hit.
-      // But wait! If this is an OCO Stop Leg, and the price is moving AWAY from stop,
-      // it might be hitting the LIMIT (TP) leg. That is handled by the "LIMIT ORDER LOGIC" below 
-      // (which is entered if category == limit).
-      // Since this order is 'stop_xyz', we just return here.
-      // The sibling Limit Order (if OCO) is a SEPARATE order document processed separately in the loop.
-      
-      // Not triggered yet
-      throw new Error("Stop price not reached");
+      return {
+        success: true,
+        message: "Stop Limit Triggered - Order is now active Limit",
+        order: triggered,
+        triggered: true,
+      };
     }
   }
-  
-  // 2. LIMIT ORDER LOGIC (Execution Phase)
+  // 2. LIMIT ORDER LOGIC
   else if (order.category === "limit") {
     const isBuyMatch = order.type === "buy" && current_price <= order.limit_price;
     const isSellMatch = order.type === "sell" && current_price >= order.limit_price;
-    
-    if (isBuyMatch || isSellMatch) {
-      executed = true;
-    } else {
-      throw new Error("Price condition not met");
-    }
+    if (!isBuyMatch && !isSellMatch) throw new Error("Price condition not met");
+  } else {
+    throw new Error("Unknown execution state");
   }
 
   // 3. EXECUTION PHASE
-  if (executed) {
-
-    if (order.type === "buy") {
-      // Finance optimization: Execute at current_price if it's better than limit_price
-      // Ensure we strictly respect order.limit_price if it's set
-      let executionPrice;
-      if (order.category === "stop_market") {
-        executionPrice = current_price;
-      } else {
-        // If it's a limit order, we use the minimum of current price and limit price
-        // This ensures the user gets the best price but never worse than their limit
-        executionPrice = order.limit_price ? Math.min(order.limit_price, current_price) : current_price;
-      }
-      const executionTotal = executionPrice * order.quantity;
-      
-      await executeBuy(
-        order.user_id,
-        {
-          coinId: order.coin_id,
-          coinName: order.coin_name,
-          coinSymbol: order.coin_symbol,
-          image: order.coin_image,
-        },
-        order.quantity,
-        executionPrice,
-        executionTotal,
-        0,
-        false, // Do not deduct balance (already locked)
-      );
-
-      // REFUND LOGIC: If we bought cheaper than the locked total_value, refund the difference
-      const refundAmount = order.total_value - executionTotal;
-      if (refundAmount > 0.0001) { // Threshold to avoid tiny dust adjustments
-        try {
-          const userDoc = await User.findOne({ id: order.user_id });
-          if (userDoc) {
-            userDoc.virtualBalance += refundAmount;
-            await userDoc.save();
-          }
-        } catch (refundErr) {
-          console.error("[Order Service] ⚠️ Refund Error:", refundErr.message);
-        }
-      }
-    } else if (order.type === "sell") {
-      // Finance optimization: Execute at current_price if it's better than limit_price
-      let executionPrice;
-      if (order.category === "stop_market") {
-        executionPrice = current_price;
-      } else {
-        // For sell limit, we use the maximum of current price and limit price
-        executionPrice = order.limit_price ? Math.max(order.limit_price, current_price) : current_price;
-      }
-
-      await executeSell(
-        order.user_id,
-        order.coin_id,
-        order.quantity,
-        executionPrice,
-      );
-    }
-
-    order.status = "filled";
-    order.filled_quantity = order.quantity;
-    await order.save();
-
-    // ---------------------------------------------------------
-    // OCO CANCELLATION LOGIC
-    // ---------------------------------------------------------
-    if (order.oco_group_id) {
-       const OrderModel = require("../Models/Order"); // Lazy load to avoid circular deps if any
-       // Find sibling order
-       const sibling = await OrderModel.findOne({ 
-         oco_group_id: order.oco_group_id, 
-         _id: { $ne: order._id },
-         status: { $in: ["pending", "triggered"] }
-       });
-
-       if (sibling) {
-         sibling.status = "cancelled";
-         await sibling.save();
-         console.log(`[Order Service] 🔗 OCO: Order ${order._id} filled. Cancelled sibling ${sibling._id}`);
-         
-         // Notify user of cancellation
-         socketService.sendToUser(order.user_id, "ORDER_CANCELLED", {
-           orderId: sibling._id,
-           reason: "OCO_FILLED"
-         });
-       }
-    }
-    // ---------------------------------------------------------
-
-    // Create persistent notification in DB
-    try {
-      const userDoc = await User.findOne({ id: order.user_id });
-      if (userDoc) {
-        const isBetterPrice = order.type === "buy" ? current_price < order.limit_price : current_price > order.limit_price;
-        const priceLabel = isBetterPrice ? `at a better price of $${current_price.toLocaleString()} (Best Price Applied)` : `at $${current_price.toLocaleString()}`;
-
-        await Notification.create({
-          user: userDoc._id,
-          title: "Order Filled",
-          message: `Your ${order.type.toUpperCase()} order for ${order.quantity} ${order.coin_symbol.toUpperCase()} was filled ${priceLabel}.`,
-          type: "success",
-          category: order.category
-        });
-      }
-    } catch (notifyError) {
-      console.error("[Order Service] ⚠️ Success Notification Error:", notifyError.message);
-    }
-
-    // Notify via WebSocket
-    socketService.sendToUser(order.user_id, "ORDER_FILLED", {
-      orderId: order._id,
-      symbol: order.coin_symbol,
-      type: order.type,
-      fillPrice: current_price
-    });
-
-    return { success: true, message: "Order executed", order };
+  // Stop-market fills at market; limits fill at the better of market and limit
+  let executionPrice = current_price;
+  if (order.category !== "stop_market" && order.limit_price) {
+    executionPrice =
+      order.type === "buy"
+        ? Math.min(order.limit_price, current_price)
+        : Math.max(order.limit_price, current_price);
   }
 
-  throw new Error("Unknown execution state");
+  let filled;
+  try {
+    filled = await runInTransaction(async (session) => {
+      // Load the group before claiming so the lock is computed from active legs
+      const fresh = await Order.findById(order._id).session(session);
+      if (!fresh || !ACTIVE_STATUSES.includes(fresh.status)) {
+        throw new Error("Order already processed");
+      }
+      const legs = await getActiveGroup(fresh, session);
+
+      const claimed = await Order.findOneAndUpdate(
+        { _id: order._id, status: { $in: ACTIVE_STATUSES } },
+        { status: "filled", filled_quantity: fresh.quantity, locked_amount: 0 },
+        { session, new: true },
+      );
+      if (!claimed) throw new Error("Order already processed");
+
+      const siblings = legs.filter((leg) => !leg._id.equals(claimed._id));
+      if (siblings.length > 0) {
+        await Order.updateMany(
+          { _id: { $in: siblings.map((s) => s._id) }, status: { $in: ACTIVE_STATUSES } },
+          { status: "cancelled", locked_amount: 0 },
+          { session },
+        );
+      }
+
+      if (claimed.type === "buy") {
+        const executionTotal = executionPrice * claimed.quantity;
+        await buyInSession(
+          session,
+          claimed.user_id,
+          {
+            coinId: claimed.coin_id,
+            coinName: claimed.coin_name,
+            coinSymbol: claimed.coin_symbol,
+            image: claimed.coin_image,
+          },
+          claimed.quantity,
+          executionPrice,
+          executionTotal,
+          0,
+          false, // funds were locked when the order was placed
+        );
+
+        // Return what the group reserved beyond the fill cost. A stop-market can
+        // fill above its stop price; the shortfall is charged (and fails the order
+        // if the balance can't cover it).
+        const difference = getBuyGroupLock(legs) - executionTotal;
+        if (Math.abs(difference) > 0.0001) {
+          await adjustBalance(session, claimed.user_id, difference);
+        }
+      } else {
+        await sellInSession(session, claimed.user_id, claimed.coin_id, claimed.quantity, executionPrice, {
+          orderId: claimed._id,
+          ocoGroupId: claimed.oco_group_id,
+        });
+      }
+
+      return { claimed, siblings };
+    });
+  } catch (err) {
+    if (isTerminalError(err)) await failOrder(order, err.message);
+    throw err;
+  }
+
+  const { claimed, siblings } = filled;
+
+  for (const sibling of siblings) {
+    console.log(`[Order Service] 🔗 OCO: Order ${claimed._id} filled. Cancelled sibling ${sibling._id}`);
+    socketService.sendToUser(claimed.user_id, "ORDER_CANCELLED", {
+      orderId: sibling._id,
+      reason: "OCO_FILLED",
+    });
+  }
+
+  const isBetterPrice =
+    order.category !== "stop_market" && executionPrice !== order.limit_price;
+  const priceLabel = isBetterPrice
+    ? `at a better price of $${executionPrice.toLocaleString()} (Best Price Applied)`
+    : `at $${executionPrice.toLocaleString()}`;
+
+  await notifyUser(claimed.user_id, {
+    title: "Order Filled",
+    message: `Your ${claimed.type.toUpperCase()} order for ${claimed.quantity} ${claimed.coin_symbol.toUpperCase()} was filled ${priceLabel}.`,
+    type: "success",
+    category: claimed.category,
+  });
+
+  socketService.sendToUser(claimed.user_id, "ORDER_FILLED", {
+    orderId: claimed._id,
+    symbol: claimed.coin_symbol,
+    type: claimed.type,
+    fillPrice: executionPrice,
+  });
+
+  return { success: true, message: "Order executed", order: claimed };
 };
 
 module.exports = {
-  processOrderExecution
+  processOrderExecution,
 };

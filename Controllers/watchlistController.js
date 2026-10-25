@@ -3,14 +3,10 @@ const { normalizeCoinImage } = require("../utils/imageUtils");
 
 exports.addToWatchList = async (req, res) => {
   try {
-    let { user_id } = req.body;
+    const user_id = req.user.id;
     const { id, image: rawImage } = req.body;
 
-    if (!user_id && req.user) {
-      user_id = req.user.id;
-    }
-
-    if (!user_id || !id) {
+    if (typeof id !== "string" || !id) {
       return res
         .status(400)
         .json({ message: "User ID and Coin ID are required" });
@@ -43,19 +39,9 @@ exports.addToWatchList = async (req, res) => {
 exports.getWatchList = async (req, res) => {
   try {
     const { id } = req.query;
-    let { user_id } = req.query;
+    const filter = { user_id: req.user.id };
 
-    if (!user_id && req.user) {
-      user_id = req.user.id;
-    }
-
-    if (!user_id) {
-      return res.status(400).json({ message: "User ID required" });
-    }
-
-    const filter = { user_id };
-
-    if (id) {
+    if (typeof id === "string" && id) {
       filter.id = id;
     }
 
@@ -69,13 +55,10 @@ exports.getWatchList = async (req, res) => {
 
 exports.removeFromWatchList = async (req, res) => {
   try {
-    let { user_id, id } = req.query;
+    const user_id = req.user.id;
+    const { id } = req.query;
 
-    if (!user_id && req.user) {
-      user_id = req.user.id;
-    }
-
-    if (!user_id || !id) {
+    if (typeof id !== "string" || !id) {
       return res
         .status(400)
         .json({ message: "user_id and coin id are required" });

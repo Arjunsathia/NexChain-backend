@@ -1,19 +1,73 @@
+const crypto = require("crypto");
+const mongoose = require("mongoose");
 const Order = require("../Models/Order");
 const User = require("../Models/userModel");
 const PurchasedCoin = require("../Models/PurchasedCoin");
+const FrozenCoin = require("../Models/frozenCoinModel");
 const { normalizeCoinImage } = require("../utils/imageUtils");
+const { resolveCoin } = require("../services/coinRegistry");
+const { processOrderExecution } = require("../services/orderExecutionService");
+const tradingEngine = require("../services/tradingEngine");
+const { runInTransaction, lockUser, adjustBalance } = require("../utils/transactionHelpers");
+const {
+  ACTIVE_STATUSES,
+  getLockedSellQuantity,
+  getBuyGroupLock,
+  getActiveGroup,
+} = require("../utils/orderLocks");
 
-// Create a new limit order
-// Create a new limit order
+// Server-side coin lookup shared by order creation. Buys of frozen coins are
+// blocked; sells stay allowed so users can exit positions.
+const resolveOrderCoin = async (coinId, type, res) => {
+  const coin = await resolveCoin(coinId);
+  if (!coin) {
+    res.status(400).json({ error: "This coin is not available for trading" });
+    return null;
+  }
+  if (type === "buy" && (await FrozenCoin.exists({ coinId: coin.coinId }))) {
+    res.status(403).json({ error: "Trading for this coin is currently frozen" });
+    return null;
+  }
+  return coin;
+};
+
+// Orders can only be read or changed by their owner
+const findOwnOrder = (orderId, userId, session) =>
+  mongoose.isValidObjectId(orderId)
+    ? Order.findOne({ _id: orderId, user_id: userId }).session(session || null)
+    : null;
+
+/** Throws if the user can't cover `quantity` coins on top of their open sell orders */
+const assertSellableQuantity = async (session, userId, coinId, quantity, exclude, message) => {
+  const purchases = await PurchasedCoin.find({ user_id: userId, coin_id: coinId }).session(session);
+  const owned = purchases.reduce((sum, p) => sum + p.quantity, 0);
+  const reserved = await getLockedSellQuantity(userId, coinId, session, exclude);
+  if (owned - reserved < quantity - 0.00000001) throw new Error(message);
+};
+
+const INSUFFICIENT_HOLDINGS = "Insufficient available holdings (check open orders)";
+
+// Business-rule failures thrown inside transactions, mapped to 400s
+const sendTradeError = (res, error, fallback, balanceMessage) => {
+  if (error.message === "Insufficient balance") {
+    return res.status(400).json({ error: balanceMessage });
+  }
+  if (error.message.startsWith("Insufficient")) {
+    return res.status(400).json({ error: error.message });
+  }
+  console.error(`${fallback}:`, error);
+  res.status(500).json({ error: fallback });
+};
+
+// Create a new limit / stop order
 exports.createOrder = async (req, res) => {
+  const user_id = req.user.id;
   const {
-    user_id,
     coin_id,
-    coin_symbol,
     coin_name,
     coin_image: rawImage,
     type, // 'buy' or 'sell'
-    category = "limit", // 'market', 'limit', 'stop_limit', 'stop_market'
+    category, // 'limit', 'stop_limit', 'stop_market'
     limit_price,
     stop_price,
     quantity,
@@ -24,119 +78,76 @@ exports.createOrder = async (req, res) => {
     const user = await User.findOne({ id: user_id });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Check Freeze Status
     if (user.isFrozen) {
       return res
         .status(403)
         .json({ error: "Account is frozen. Trading disabled." });
     }
 
-    // Determine price for value calculation
-    let priceForCalc = limit_price;
-    if (category === "stop_market") priceForCalc = stop_price;
+    const coin = await resolveOrderCoin(coin_id, type, res);
+    if (!coin) return;
 
+    const priceForCalc = category === "stop_market" ? stop_price : limit_price;
     const total_value = priceForCalc * quantity;
 
-    if (type === "buy") {
-      // Check Balance
-      // For standard orders, just check if enough balance.
-      // NOTE: We need to also account for LOCKED balance from other orders if not already deducted?
-      // In this system, it seems 'virtualBalance' is the *available* balance (funds are deducted immediately on lock).
-      // Line 46: user.virtualBalance -= total_value; -> Confirms virtualBalance is "Available Balance".
-      if (user.virtualBalance < total_value) {
-        return res
-          .status(400)
-          .json({ error: "Insufficient balance for order" });
+    const { newOrder, newBalance } = await runInTransaction(async (session) => {
+      await lockUser(session, user_id);
+
+      let balance;
+      if (type === "buy") {
+        // Lock the funds now; virtualBalance is the available balance
+        balance = await adjustBalance(session, user_id, -total_value);
+      } else {
+        await assertSellableQuantity(session, user_id, coin.coinId, quantity, {}, INSUFFICIENT_HOLDINGS);
       }
 
-      // Lock Funds
-      user.virtualBalance -= total_value;
-      await user.save();
-    } else if (type === "sell") {
-      // Check Holdings
-      const purchases = await PurchasedCoin.find({ user_id, coin_id });
-      const totalOwned = purchases.reduce((sum, p) => sum + p.quantity, 0);
-
-      // Claculate Locked Quantity (handling OCO groups)
-      const pendingOrders = await Order.find({
-        user_id,
-        coin_id,
-        type: "sell",
-        status: "pending",
-      });
-
-      // Group by OCO ID to avoid double counting locked assets
-      const ocoGroups = {};
-      let lockedQuantity = 0;
-
-      for (const order of pendingOrders) {
-        if (order.oco_group_id) {
-          if (!ocoGroups[order.oco_group_id]) {
-            ocoGroups[order.oco_group_id] = 0;
-          }
-          // In a Sell OCO, both legs usually use the same quantity.
-          // We take the max just in case they differ (unlikely but safe).
-          const q = order.quantity - order.filled_quantity;
-          if (q > ocoGroups[order.oco_group_id]) {
-            ocoGroups[order.oco_group_id] = q;
-          }
-        } else {
-          // Standard order
-          lockedQuantity += (order.quantity - order.filled_quantity);
-        }
-      }
-
-      // Add OCO max quantities
-      Object.values(ocoGroups).forEach(q => lockedQuantity += q);
-
-      if (totalOwned - lockedQuantity < quantity) {
-        return res.status(400).json({
-          error: "Insufficient available holdings (check open orders)",
-        });
-      }
-    }
-
-    const newOrder = await Order.create({
-      user_id,
-      coin_id,
-      coin_symbol,
-      coin_name,
-      coin_image,
-      type,
-      category,
-      limit_price,
-      stop_price,
-      quantity,
-      total_value,
-      status: "pending",
+      const [created] = await Order.create(
+        [
+          {
+            user_id,
+            coin_id: coin.coinId,
+            coin_symbol: coin.symbol,
+            coin_name: coin.name || coin_name,
+            coin_image,
+            type,
+            category,
+            limit_price,
+            stop_price,
+            quantity,
+            total_value,
+            locked_amount: type === "buy" ? total_value : 0,
+            status: "pending",
+          },
+        ],
+        { session },
+      );
+      return { newOrder: created, newBalance: balance };
     });
+
+    tradingEngine.ensureTracking(`${coin.symbol}usdt`);
 
     res.status(201).json({
       success: true,
       order: newOrder,
-      newBalance: user.virtualBalance,
+      newBalance: newBalance ?? user.virtualBalance,
     });
   } catch (error) {
-    console.error("Create Order Error:", error);
-    res.status(500).json({ error: "Failed to create order" });
+    sendTradeError(res, error, "Failed to create order", "Insufficient balance for order");
   }
 };
 
 // Create OCO Order (One Cancels the Other)
 exports.createOCOOrder = async (req, res) => {
+  const user_id = req.user.id;
   const {
-    user_id,
     coin_id,
-    coin_symbol,
-    coin_name,
+    coin_name: clientCoinName,
     coin_image: rawImage,
     type, // 'buy' or 'sell'
     quantity,
-    // Leg 1: Take Profit (Limit)
-    tp_limit_price,
-    // Leg 2: Stop Loss (Stop Limit or Stop Market)
-    sl_stop_price,
-    sl_limit_price, // Optional, if provided = Stop Limit, else Stop Market
+    tp_limit_price, // Leg 1: Take Profit (Limit)
+    sl_stop_price, // Leg 2: Stop Loss (Stop Limit or Stop Market)
+    sl_limit_price, // Optional: if provided = Stop Limit, else Stop Market
   } = req.body;
 
   try {
@@ -145,119 +156,83 @@ exports.createOCOOrder = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
     if (user.isFrozen) return res.status(403).json({ error: "Account frozen" });
 
-    const oco_group_id = require("crypto").randomUUID();
-    
-    // Prepare Order Objects
-    const ordersToCreate = [];
+    const coin = await resolveOrderCoin(coin_id, type, res);
+    if (!coin) return;
 
-    // 1. Take Profit Leg (Limit)
-    const tpOrder = {
+    const oco_group_id = crypto.randomUUID();
+    const base = {
       user_id,
-      coin_id,
-      coin_symbol,
-      coin_name,
+      coin_id: coin.coinId,
+      coin_symbol: coin.symbol,
+      coin_name: coin.name || clientCoinName,
       coin_image,
       type,
+      quantity,
+      status: "pending",
+      oco_group_id,
+    };
+
+    const tpOrder = {
+      ...base,
       category: "limit",
       limit_price: tp_limit_price,
-      quantity,
       total_value: tp_limit_price * quantity,
-      status: "pending",
-      oco_group_id
     };
-    ordersToCreate.push(tpOrder);
-
-    // 2. Stop Loss Leg
-    const slCategory = sl_limit_price ? "stop_limit" : "stop_market";
-    // For Stop Market, calc value based on stop price (approximation)
-    const slPriceForCalc = sl_limit_price || sl_stop_price; 
-    
     const slOrder = {
-      user_id,
-      coin_id,
-      coin_symbol,
-      coin_name,
-      coin_image,
-      type,
-      category: slCategory,
+      ...base,
+      category: sl_limit_price ? "stop_limit" : "stop_market",
       stop_price: sl_stop_price,
-      limit_price: sl_limit_price, // undefined if stop_market
-      quantity,
-      total_value: slPriceForCalc * quantity,
-      status: "pending",
-      oco_group_id
+      limit_price: sl_limit_price || undefined,
+      total_value: (sl_limit_price || sl_stop_price) * quantity,
     };
-    ordersToCreate.push(slOrder);
 
-    // VALIDATION & LOCKING
-    if (type === "buy") {
-      // For Buy OCO: We need to convert USDT to Coin.
-      // If we place 2 buy orders, we need to lock enough USDT for the MORE EXPENSIVE one?
-      // Actually, standard OCO logic for BUY:
-      // 1. Buy Limit @ Low (Buy dip)
-      // 2. Buy Stop @ High (Buy breakout)
-      // We lock the constant Quantity * Max(Price1, Price2).
-      // Or simply: lock max(total_value_1, total_value_2).
-      const maxRequired = Math.max(tpOrder.total_value, slOrder.total_value);
+    // Only one leg can fill, so a buy OCO reserves the larger leg's value once
+    // (held on the take-profit leg) and a sell OCO reserves the quantity once.
+    const maxRequired = Math.max(tpOrder.total_value, slOrder.total_value);
+    tpOrder.locked_amount = type === "buy" ? maxRequired : 0;
+    slOrder.locked_amount = 0;
 
-      if (user.virtualBalance < maxRequired) {
-        return res.status(400).json({ error: "Insufficient balance for OCO order" });
+    const { createdOrders, newBalance } = await runInTransaction(async (session) => {
+      await lockUser(session, user_id);
+
+      let balance;
+      if (type === "buy") {
+        balance = await adjustBalance(session, user_id, -maxRequired);
+      } else {
+        await assertSellableQuantity(
+          session,
+          user_id,
+          coin.coinId,
+          quantity,
+          {},
+          "Insufficient holdings for OCO order",
+        );
       }
-      user.virtualBalance -= maxRequired;
-      await user.save();
-    } else {
-      // SELL OCO
-      // Check Holdings
-      // We only need to lock 'quantity' once, since only one can fill.
-      const purchases = await PurchasedCoin.find({ user_id, coin_id });
-      const totalOwned = purchases.reduce((sum, p) => sum + p.quantity, 0);
 
-      // Calculate correctly relying on our new grouped logic in createOrder
-      // Re-implement simplified check here:
-      const pendingOrders = await Order.find({ user_id, coin_id, type: "sell", status: "pending" });
-      
-      const ocoGroups = {};
-      let lockedQuantity = 0;
-      for (const order of pendingOrders) {
-        if (order.oco_group_id) {
-           const q = order.quantity - order.filled_quantity; 
-           // Track max for group
-           if (!ocoGroups[order.oco_group_id] || q > ocoGroups[order.oco_group_id]) {
-             ocoGroups[order.oco_group_id] = q;
-           }
-        } else {
-          lockedQuantity += (order.quantity - order.filled_quantity);
-        }
-      }
-      Object.values(ocoGroups).forEach(q => lockedQuantity += q);
+      const created = await Order.create([tpOrder, slOrder], { session, ordered: true });
+      return { createdOrders: created, newBalance: balance };
+    });
 
-      if (totalOwned - lockedQuantity < quantity) {
-        return res.status(400).json({ error: "Insufficient holdings for OCO order" });
-      }
-    }
-
-    const createdOrders = await Order.insertMany(ordersToCreate);
+    tradingEngine.ensureTracking(`${coin.symbol}usdt`);
 
     res.status(201).json({
       success: true,
       orders: createdOrders,
       message: "OCO Order placed successfully",
-      newBalance: user.virtualBalance
+      newBalance: newBalance ?? user.virtualBalance,
     });
-
   } catch (error) {
-    console.error("Create OCO Error:", error);
-    res.status(500).json({ error: "Failed to create OCO order" });
+    sendTradeError(res, error, "Failed to create OCO order", "Insufficient balance for OCO order");
   }
 };
 
-// Get pending orders for a user
+// Get open orders for a user
 exports.getOpenOrders = async (req, res) => {
   try {
     const { user_id } = req.params;
     const orders = await Order.find({
       user_id,
-      status: { $in: ["pending", "triggered"] },
+      status: { $in: ACTIVE_STATUSES },
     }).sort({
       createdAt: -1,
     });
@@ -268,144 +243,122 @@ exports.getOpenOrders = async (req, res) => {
   }
 };
 
-// Cancel an order
+// Cancel an order. Cancelling either leg of an OCO cancels the whole group,
+// and a buy group's reservation is refunded exactly once.
 exports.cancelOrder = async (req, res) => {
   try {
-    const { orderId } = req.params;
-    const order = await Order.findById(orderId);
-
-    if (!order) return res.status(404).json({ error: "Order not found" });
-    if (order.status !== "pending")
-      return res.status(400).json({ error: "Cannot cancel non-pending order" });
-
-    // Refund if Buy order
-    if (order.type === "buy") {
-      const user = await User.findOne({ id: order.user_id });
-      if (user) {
-        // Refund the remaining value (total - filled value)
-        // For simplicity assuming no partial fills yet in this version
-        user.virtualBalance += order.total_value;
-        await user.save();
+    const result = await runInTransaction(async (session) => {
+      const order = await findOwnOrder(req.params.orderId, req.user.id, session);
+      if (!order) return { status: 404, body: { error: "Order not found" } };
+      if (!ACTIVE_STATUSES.includes(order.status)) {
+        return { status: 400, body: { error: "Cannot cancel an order that is no longer open" } };
       }
-    }
 
-    order.status = "cancelled";
-    await order.save();
+      const legs = await getActiveGroup(order, session);
+      await Order.updateMany(
+        { _id: { $in: legs.map((leg) => leg._id) }, status: { $in: ACTIVE_STATUSES } },
+        { status: "cancelled", locked_amount: 0 },
+        { session },
+      );
 
-    res.json({ success: true, message: "Order cancelled" });
+      const refund = getBuyGroupLock(legs);
+      const newBalance = refund > 0 ? await adjustBalance(session, order.user_id, refund) : undefined;
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          message: legs.length > 1 ? "OCO order cancelled" : "Order cancelled",
+          cancelledOrderIds: legs.map((leg) => leg._id),
+          newBalance,
+        },
+      };
+    });
+
+    res.status(result.status).json(result.body);
   } catch (error) {
     console.error("Cancel Order Error:", error);
     res.status(500).json({ error: "Failed to cancel order" });
   }
 };
 
-// Update an existing order
+// Update an existing pending order
 exports.updateOrder = async (req, res) => {
-  const { orderId } = req.params;
   const { limit_price, stop_price, quantity } = req.body;
 
   try {
-    const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ error: "Order not found" });
-    if (order.status !== "pending") {
-      return res.status(400).json({ error: "Only pending orders can be updated" });
-    }
-
-    const user = await User.findOne({ id: order.user_id });
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    // Determine new price for value calculation
-    let priceForCalc = limit_price !== undefined ? limit_price : order.limit_price;
-    if (order.category === "stop_market") {
-      priceForCalc = stop_price !== undefined ? stop_price : order.stop_price;
-    }
-
-    const newQuantity = quantity !== undefined ? quantity : order.quantity;
-    const newTotalValue = priceForCalc * newQuantity;
-    const valueDifference = newTotalValue - order.total_value;
-
-    if (order.type === "buy") {
-      // If order is now more expensive, check and deduct balance
-      if (valueDifference > 0) {
-        if (user.virtualBalance < valueDifference) {
-          return res.status(400).json({ error: "Insufficient balance for the update" });
-        }
-        user.virtualBalance -= valueDifference;
-      } else if (valueDifference < 0) {
-        // Refund the difference
-        user.virtualBalance += Math.abs(valueDifference);
+    const result = await runInTransaction(async (session) => {
+      const order = await findOwnOrder(req.params.orderId, req.user.id, session);
+      if (!order) return { status: 404, body: { error: "Order not found" } };
+      if (order.status !== "pending") {
+        return { status: 400, body: { error: "Only pending orders can be updated" } };
       }
-      await user.save();
-    } else if (order.type === "sell") {
-      // If quantity increased, check holdings
-        if (newQuantity > order.quantity) {
-        const purchases = await PurchasedCoin.find({ user_id: order.user_id, coin_id: order.coin_id });
-        const totalOwned = purchases.reduce((sum, p) => sum + p.quantity, 0);
-
-        const pendingOrders = await Order.find({
-          user_id: order.user_id,
-          coin_id: order.coin_id,
-          type: "sell",
-          status: "pending",
-          _id: { $ne: orderId } // Exclude current order
-        });
-        
-        // Locked Quantity Logic with OCO support
-        const ocoGroups = {};
-        let lockedQuantity = 0;
-        for (const o of pendingOrders) {
-          if (o.oco_group_id) {
-            const q = o.quantity - o.filled_quantity; 
-            if (!ocoGroups[o.oco_group_id] || q > ocoGroups[o.oco_group_id]) {
-              ocoGroups[o.oco_group_id] = q;
-            }
-          } else {
-            lockedQuantity += (o.quantity - o.filled_quantity);
-          }
-        }
-        Object.values(ocoGroups).forEach(q => lockedQuantity += q);
-
-        if (totalOwned - lockedQuantity < newQuantity) {
-          return res.status(400).json({
-            error: "Insufficient available holdings for this quantity increase",
-          });
-        }
+      // The two legs share one reservation, so editing a single leg isn't supported
+      if (order.oco_group_id) {
+        return {
+          status: 400,
+          body: { error: "OCO orders can't be edited. Cancel it and place a new one." },
+        };
       }
-    }
 
-    // Update the order fields
-    if (limit_price !== undefined) order.limit_price = limit_price;
-    if (stop_price !== undefined) order.stop_price = stop_price;
-    if (quantity !== undefined) order.quantity = quantity;
-    order.total_value = newTotalValue;
+      const newLimit = limit_price !== undefined ? limit_price : order.limit_price;
+      const newStop = stop_price !== undefined ? stop_price : order.stop_price;
+      const newQuantity = quantity !== undefined ? quantity : order.quantity;
+      const priceForCalc = order.category === "stop_market" ? newStop : newLimit;
+      const newTotalValue = priceForCalc * newQuantity;
 
-    await order.save();
+      await lockUser(session, order.user_id);
 
-    res.json({
-      success: true,
-      message: "Order updated successfully",
-      order,
-      newBalance: user.virtualBalance
+      let newBalance;
+      if (order.type === "buy") {
+        // Charge or refund only the difference against what's already reserved
+        const difference = newTotalValue - getBuyGroupLock([order]);
+        if (Math.abs(difference) > 0.0001) {
+          newBalance = await adjustBalance(session, order.user_id, -difference);
+        }
+        order.locked_amount = newTotalValue;
+      } else if (newQuantity > order.quantity) {
+        await assertSellableQuantity(
+          session,
+          order.user_id,
+          order.coin_id,
+          newQuantity,
+          { orderId: order._id },
+          "Insufficient available holdings for this quantity increase",
+        );
+      }
+
+      order.limit_price = newLimit;
+      order.stop_price = newStop;
+      order.quantity = newQuantity;
+      order.total_value = newTotalValue;
+      await order.save({ session });
+
+      if (newBalance === undefined) {
+        newBalance = (await User.findOne({ id: order.user_id }).session(session)).virtualBalance;
+      }
+
+      return {
+        status: 200,
+        body: { success: true, message: "Order updated successfully", order, newBalance },
+      };
     });
+
+    res.status(result.status).json(result.body);
   } catch (error) {
-    console.error("Update Order Error:", error);
-    res.status(500).json({ error: "Failed to update order" });
+    sendTradeError(res, error, "Failed to update order", "Insufficient balance for the update");
   }
 };
-
-const { processOrderExecution } = require("../services/orderExecutionService");
 
 // Execute an order (triggered by price match or manual request)
 exports.executeOrder = async (req, res) => {
   const { orderId } = req.body;
-  const tradingEngine = require("../services/tradingEngine");
 
   try {
-    const order = await Order.findById(orderId);
+    const order = await findOwnOrder(orderId, req.user.id);
     if (!order) return res.status(404).json({ error: "Order not found" });
-    
-    // Only allow processing if pending or triggered
-    if (order.status !== "pending" && order.status !== "triggered") {
+
+    if (!ACTIVE_STATUSES.includes(order.status)) {
       return res.status(400).json({ error: "Order is not in an executable state" });
     }
 
@@ -422,7 +375,16 @@ exports.executeOrder = async (req, res) => {
     const result = await processOrderExecution(order, currentPrice);
     res.json(result);
   } catch (error) {
-    console.error("Execute Order Error:", error.message);
-    res.status(500).json({ error: error.message || "Failed to execute order" });
+    const clientErrors = {
+      "Price condition not met": 400,
+      "Stop price not reached": 400,
+      "Order already processed": 409,
+    };
+    const status =
+      clientErrors[error.message] || (error.message?.startsWith("Insufficient") ? 400 : 500);
+    if (status === 500) console.error("Execute Order Error:", error.message);
+    res
+      .status(status)
+      .json({ error: status === 500 ? "Failed to execute order" : error.message });
   }
 };

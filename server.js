@@ -9,6 +9,7 @@ const mongoSanitize = require("express-mongo-sanitize");
 
 // Load environment config
 dotenv.config({ path: path.join(__dirname, ".env") });
+require("./config/env")();
 
 const fs = require("fs");
 if (!fs.existsSync("uploads")) {
@@ -31,27 +32,42 @@ const authRoutes = require("./Routes/authRoutes");
 const coinRoutes = require("./Routes/coinRoutes");
 const newsRoutes = require("./Routes/newsRoutes");
 const chatRoutes = require("./Routes/chatRoutes");
+const twoFactorRoutes = require("./Routes/twoFactorRoutes");
 
 
 const app = express();
 
-// connection to MongoDB Atlas
-connectDB().then(() => {
-  // Start the background trading engine
-  tradingEngine.start();
-});
+// Behind Render's proxy: use X-Forwarded-For for req.ip (rate limits, audit logs)
+app.set("trust proxy", 1);
 
-// CORS configuration
+// CORS configuration (CORS_ORIGINS: comma-separated extra origins)
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  ...(process.env.CORS_ORIGINS || "").split(","),
+]
+  .map((origin) => origin && origin.trim())
+  .filter(Boolean);
+
 const corsOptions = {
-  origin: [process.env.CLIENT_URL, "https://nexchain-black.vercel.app", "http://localhost:5173"],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Admin-2FA-Code"],
   credentials: true,
 };
 
+// Structured request logs in production (Render log stream)
+if (process.env.NODE_ENV === "production") {
+  app.use(
+    require("pino-http")({
+      autoLogging: { ignore: (req) => req.url === "/api/health" },
+      redact: ["req.headers.authorization", "req.headers.cookie", 'res.headers["set-cookie"]'],
+    }),
+  );
+}
+
 app.use(cors(corsOptions));
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 // Serve the uploads directory statically for image access
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -63,24 +79,51 @@ app.use(
   })
 );
 
-// Manual Mongo Sanitize to handle Express 5 read-only properties
+// Manual Mongo Sanitize: Express 5 exposes req.query as a getter, so it is
+// redefined with the sanitized copy instead of assigned.
 app.use((req, res, next) => {
   if (req.body) req.body = mongoSanitize.sanitize(req.body);
   if (req.params) req.params = mongoSanitize.sanitize(req.params);
-  
-  // Clean query safely (ignore if read-only getter)
-  try {
-    if (req.query) req.query = mongoSanitize.sanitize(req.query);
-  } catch (err) {
-    // console.warn("Could not sanitize query:", err.message);
+  if (req.query) {
+    Object.defineProperty(req, "query", {
+      value: mongoSanitize.sanitize({ ...req.query }),
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
   }
   next();
 });
 
-// Rate Limiting for Auth Routes is handled in authRoutes.js with specific limiters
-// const authLimiter = ... (removed to avoid conflict)
+// Rate limits live next to their routes (middleware/rateLimiters.js)
 
-// app.use("/api/auth", authLimiter); // Removed
+// Health check (Render probes it; the admin dashboard shows it). Public, so it
+// only exposes operational status. 503 when the database is unreachable.
+app.get("/api/health", async (req, res) => {
+  const mongoose = require("mongoose");
+  const started = Date.now();
+  let dbOk = false;
+  try {
+    dbOk = mongoose.connection.readyState === 1 && !!(await mongoose.connection.db.admin().ping());
+  } catch {
+    dbOk = false;
+  }
+  const dbLatencyMs = Date.now() - started;
+
+  const prices = Object.values(tradingEngine.prices);
+  const freshSymbols = prices.filter((p) => Date.now() - p.timestamp < 60000).length;
+
+  res.status(dbOk ? 200 : 503).json({
+    status: dbOk ? "ok" : "degraded",
+    uptimeSeconds: Math.round(process.uptime()),
+    db: { ok: dbOk, latencyMs: dbLatencyMs },
+    priceFeed: {
+      connected: tradingEngine.ws?.readyState === 1,
+      freshSymbols,
+      trackedSymbols: tradingEngine.activeSymbols.size,
+    },
+  });
+});
 
 // Routes 
 app.use("/api/users", userRoutes);
@@ -95,6 +138,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/coins", coinRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/2fa", twoFactorRoutes);
 
 
 // Global Error Handler
@@ -102,8 +146,7 @@ app.use("/api/chat", chatRoutes);
 app.use((err, req, res, next) => {
   console.error("Server Error:", err.message);
 
-  // Handle Joi Validation Errors (fallback if middleware didn't catch it, though check used there)
-  // Actually, Joi errors are usually handled in the middleware, but if thrown:
+  // Joi errors are normally answered by middleware/validation.js
   if (err.isJoi) {
     return res.status(400).json({
       success: false,
@@ -129,27 +172,55 @@ app.use((err, req, res, next) => {
     });
   }
 
-  res.status(err.status || 500).json({
+  // Internal error details stay in the logs in production
+  const status = err.status || (res.statusCode >= 400 ? res.statusCode : 500);
+  const hide = status >= 500 && process.env.NODE_ENV === "production";
+  res.status(status).json({
     success: false,
-    message: err.message || "Internal Server Error",
-    errors: err.errors || undefined, // For other structured errors
+    message: hide ? "Internal Server Error" : err.message || "Internal Server Error",
+    errors: hide ? undefined : err.errors || undefined,
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4001;
 
-let server;
+// Only connect and start background jobs when run directly (not when imported by tests)
 if (require.main === module) {
-  server = app.listen(PORT, () => {
+  const mongoose = require("mongoose");
+  const socketService = require("./services/socketService");
+
+  // ENGINE_ENABLED=false runs the API without the order engine and cron jobs.
+  // Only one running instance may have the engine on, or orders are processed twice.
+  const engineEnabled = process.env.ENGINE_ENABLED !== "false";
+
+  connectDB().then(() => {
+    if (engineEnabled) tradingEngine.start();
+    else console.log("[TRADING ] ⏸  Engine disabled (ENGINE_ENABLED=false)");
+  });
+
+  const server = app.listen(PORT, () => {
     console.log(`[SERVER  ] ✅ Running on port ${PORT}`);
     console.log(`[SERVER  ]  Environment: ${process.env.NODE_ENV || "development"}`);
   });
+  socketService.init(server);
+
+  // Render sends SIGTERM on every deploy: stop taking work, let in-flight
+  // requests and trades finish, then exit
+  let shuttingDown = false;
+  const shutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[SERVER  ] ${signal} received, shutting down...`);
+    tradingEngine.stop();
+    socketService.close();
+    server.close(async () => {
+      await mongoose.disconnect().catch(() => {});
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 module.exports = app; // Export for testing
-
-// Initialize real-time socket updates
-const socketService = require("./services/socketService");
-if (server) {
-  socketService.init(server);
-}

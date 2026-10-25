@@ -2,6 +2,7 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 const path = require("path");
+const crypto = require("crypto");
 
 // Fallback to disk storage if Cloudinary credentials are missing
 const isCloudinaryConfigured =
@@ -33,10 +34,8 @@ if (isCloudinaryConfigured) {
       cb(null, "uploads/");
     },
     filename: function (req, file, cb) {
-      cb(
-        null,
-        file.fieldname + "-" + Date.now() + path.extname(file.originalname),
-      );
+      // Random names: public avatar URLs shouldn't be guessable
+      cb(null, `${crypto.randomUUID()}${path.extname(file.originalname).toLowerCase()}`);
     },
   });
 }
@@ -45,7 +44,7 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 5000000 },
   fileFilter: function (req, file, cb) {
-    const filetypes = /jpeg|jpg|png|gif|webp/;
+    const filetypes = /^(\.)?(jpeg|jpg|png|gif|webp)$|^image\/(jpeg|png|gif|webp)$/;
     const extname = filetypes.test(
       path.extname(file.originalname).toLowerCase(),
     );

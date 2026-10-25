@@ -1,4 +1,5 @@
 const FrozenCoin = require("../Models/frozenCoinModel");
+const User = require("../Models/userModel");
 
 // @desc    Get all frozen coins
 // @route   GET /api/coins/frozen
@@ -39,11 +40,13 @@ exports.freezeCoin = async (req, res) => {
         .json({ success: false, message: "Coin is already frozen" });
     }
 
+    // The JWT only carries the UUID; FrozenCoin.frozenBy references the Mongo _id
+    const admin = await User.findOne({ id: req.user.id }).select("_id");
     const frozenCoin = await FrozenCoin.create({
       coinId,
       symbol,
       name: name || symbol,
-      frozenBy: req.user._id,
+      frozenBy: admin?._id,
     });
 
     res.status(201).json({
@@ -85,11 +88,13 @@ exports.unfreezeCoin = async (req, res) => {
 // @access  Public
 exports.trackCoin = async (req, res) => {
   const { symbol } = req.body;
-  if (!symbol) return res.status(400).json({ success: false });
+  if (typeof symbol !== "string" || !/^[a-z0-9]{1,15}$/i.test(symbol)) {
+    return res.status(400).json({ success: false });
+  }
 
   try {
     const tradingEngine = require("../services/tradingEngine");
-    tradingEngine.ensureTracking(symbol + "usdt");
+    tradingEngine.ensureTracking(symbol.toLowerCase() + "usdt");
     res.json({ success: true, message: "Tracking started" });
   } catch {
     // Silent fail ok

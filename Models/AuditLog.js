@@ -17,6 +17,10 @@ const auditLogSchema = new mongoose.Schema(
         "USER_UNFREEZE",
         "USER_ROLE_CHANGE",
         "USER_BALANCE_UPDATE",
+        "ROLE_CHANGE",
+        "USER_CONTACT",
+        "KYC_VERIFY",
+        "KYC_REJECT",
       ],
     },
     targetId: {

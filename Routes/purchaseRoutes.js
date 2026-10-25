@@ -1,4 +1,3 @@
-// Routes/purchaseRoutes.js - UPDATED
 const express = require("express");
 const router = express.Router();
 const {
@@ -11,34 +10,26 @@ const {
   getUserTransactionHistory,
   getPlatformStats,
   getTodayTransactions,
+  getPerformance,
 } = require("../Controllers/purchaseController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, adminOnly, selfOrAdmin } = require("../middleware/authMiddleware");
+const validate = require("../middleware/validation");
+const schemas = require("../utils/validationSchemas");
 
-// GET /api/purchases/platform-stats - Get platform stats (Admin)
-router.get("/platform-stats", protect, getPlatformStats);
+// Admin dashboard
+router.get("/platform-stats", protect, adminOnly, getPlatformStats);
+router.get("/today-transactions", protect, adminOnly, getTodayTransactions);
 
-// GET /api/purchases/today-transactions - Get detailed today's transactions
-router.get("/today-transactions", protect, getTodayTransactions);
-
-// GET /api/purchases/:user_id - Get user purchases
-router.get("/:user_id", protect, getUserPurchases);
-
-// POST /api/purchases/buy - Buy coins
-router.post("/buy", protect, buyCoin);
-
-// POST /api/purchases/sell - Sell coins
-router.post("/sell", protect, sellCoin);
-
-// GET /api/purchases/balance/:user_id - Get user balance
-router.get("/balance/:user_id", protect, getUserBalance);
-
-// POST /api/purchases/reset-balance - Reset balance
+// Trading always acts on the logged-in user (any user_id in the body is ignored)
+router.post("/buy", protect, validate(schemas.buy), buyCoin);
+router.post("/sell", protect, validate(schemas.sell), sellCoin);
 router.post("/reset-balance", protect, resetBalance);
 
-// GET /api/purchases/holdings/:user_id - Get user holdings
-router.get("/holdings/:user_id", protect, getUserHoldings);
-
-// NEW: GET /api/purchases/transactions/:user_id - Get transaction history
-router.get("/transactions/:user_id", protect, getUserTransactionHistory);
+// Reads: own data, or any user's for admins
+router.get("/balance/:user_id", protect, selfOrAdmin(), getUserBalance);
+router.get("/holdings/:user_id", protect, selfOrAdmin(), getUserHoldings);
+router.get("/transactions/:user_id", protect, selfOrAdmin(), getUserTransactionHistory);
+router.get("/performance/:user_id", protect, selfOrAdmin(), getPerformance);
+router.get("/:user_id", protect, selfOrAdmin(), getUserPurchases);
 
 module.exports = router;

@@ -43,4 +43,7 @@ const alertSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Alert service: active alerts per symbol on every price tick
+alertSchema.index({ status: 1, coin_symbol: 1 });
+
 module.exports = mongoose.model("Alert", alertSchema);
