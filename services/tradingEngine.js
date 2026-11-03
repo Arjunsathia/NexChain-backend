@@ -67,6 +67,16 @@ class TradingEngine {
       }
     }));
 
+    // 5. Hourly purge of expired demo accounts and their data
+    this.tasks.push(cron.schedule("17 * * * *", async () => {
+      try {
+        const removed = await require("./demoService").purgeExpiredDemos();
+        if (removed) console.log(`🧹 [TRADING ]  Purged ${removed} expired demo account(s)`);
+      } catch (err) {
+        console.error("❌ [TRADING ]  Demo purge Error:", err.message);
+      }
+    }));
+
     console.log("✅ [TRADING ]  Engine active and running.");
   }
 

@@ -67,6 +67,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // One-click sandbox account (POST /api/auth/demo). Locked settings, no
+    // password, hidden from the leaderboard and purged after demoExpiresAt.
+    isDemo: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    demoExpiresAt: {
+      type: Date,
+    },
     // Legacy plaintext admin 2FA secret; migrated to twoFactorSecret on next enrollment
     adminTotpSecret: {
       type: Object,

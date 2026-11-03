@@ -1,5 +1,6 @@
 // Creates local dev accounts. Usage: npm run seed
-// Refuses to run against production. Existing accounts are left untouched.
+// Refuses to run against production or any database not on this machine (the
+// accounts share a known password). Existing accounts are left untouched.
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
@@ -18,6 +19,9 @@ const PASSWORD = "Password123";
 const seed = async () => {
   if (process.env.NODE_ENV === "production") {
     throw new Error("Refusing to seed a production database");
+  }
+  if (!/^mongodb:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(process.env.MONGO_URI || "")) {
+    throw new Error("Refusing to seed: MONGO_URI is not a local database (127.0.0.1 / localhost)");
   }
   await mongoose.connect(process.env.MONGO_URI);
 

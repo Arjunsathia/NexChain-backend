@@ -69,6 +69,8 @@ const sessionUser = (user) => ({
   image: user.image,
   phone: user.phone,
   twoFactorEnabled: !!user.twoFactorEnabled,
+  isDemo: !!user.isDemo,
+  demoExpiresAt: user.isDemo ? user.demoExpiresAt : undefined,
   createdAt: user.createdAt,
 });
 

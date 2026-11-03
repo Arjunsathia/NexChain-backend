@@ -26,6 +26,8 @@ const otpLimiter = limiter(10, 5, "Too many requests. Please try again after 10 
 const passwordResetLimiter = limiter(15, 5, "Too many password reset requests, please try again later");
 const googleLimiter = limiter(15, 30, "Too many sign-in attempts, please try again later");
 const refreshLimiter = limiter(15, 120, "Too many requests, please try again later");
+// Each call creates an account, so keep it tight per IP
+const demoLimiter = limiter(60, 5, "Too many demo accounts from this network. Please try again in an hour.");
 
 // Per user after `protect`; the chatbot calls a paid API
 const chatLimiter = limiter(1, 10, "Too many requests, please try again later.", (req) =>
@@ -38,5 +40,6 @@ module.exports = {
   passwordResetLimiter,
   googleLimiter,
   refreshLimiter,
+  demoLimiter,
   chatLimiter,
 };

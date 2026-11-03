@@ -7,7 +7,7 @@ const {
   getKYCDocument,
   verifyKYC,
 } = require("../Controllers/kycController");
-const { protect, adminOnly, selfOrAdmin } = require("../middleware/authMiddleware");
+const { protect, adminOnly, selfOrAdmin, blockDemo } = require("../middleware/authMiddleware");
 const { singleDocument } = require("../middleware/memoryUpload");
 const validate = require("../middleware/validation");
 const schemas = require("../utils/validationSchemas");
@@ -15,6 +15,7 @@ const schemas = require("../utils/validationSchemas");
 router.post(
   "/submit",
   protect,
+  blockDemo(),
   ...singleDocument("document", { required: true }),
   validate(schemas.kycSubmit),
   submitKYC,

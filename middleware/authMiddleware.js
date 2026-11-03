@@ -2,6 +2,35 @@ const User = require("../Models/userModel");
 const { verifyAccessToken } = require("../utils/tokens");
 const twoFactor = require("../services/twoFactor");
 
+/** Demo sandboxes stop working at demoExpiresAt, before the purge job deletes them */
+const isExpiredDemo = (user) =>
+  !!user.isDemo && (!user.demoExpiresAt || new Date(user.demoExpiresAt) <= new Date());
+
+const DEMO_BLOCKED = {
+  success: false,
+  demo: true,
+  message: "Not available on demo accounts. Create a free account to use this.",
+};
+
+/**
+ * After `protect`: rejects demo accounts. With `fields`, only rejects requests
+ * whose body sets one of those fields (e.g. a demo user may rename themselves
+ * but not change email or password).
+ */
+const blockDemo =
+  (fields) =>
+  (req, res, next) => {
+    if (!req.user?.isDemo) return next();
+    if (fields) {
+      const body = req.body || {};
+      const touched = fields.some(
+        (field) => body[field] !== undefined && body[field] !== null && body[field] !== "",
+      );
+      if (!touched) return next();
+    }
+    res.status(403).json(DEMO_BLOCKED);
+  };
+
 /**
  * Accepts a Bearer access token (or the httpOnly `token` cookie) and checks it
  * against the database, so logout, password changes, freezes and role changes
@@ -26,13 +55,18 @@ const protect = async (req, res, next) => {
 
   try {
     const user = await User.findOne({ id: decoded.id })
-      .select("id role tokenVersion isDeleted")
+      .select("id role tokenVersion isDeleted isDemo demoExpiresAt")
       .lean();
-    if (!user || user.isDeleted || (user.tokenVersion || 0) !== decoded.tv) {
+    if (
+      !user ||
+      user.isDeleted ||
+      isExpiredDemo(user) ||
+      (user.tokenVersion || 0) !== decoded.tv
+    ) {
       return res.status(401).json({ message: "Session expired, please log in again" });
     }
 
-    req.user = { id: user.id, role: user.role };
+    req.user = { id: user.id, role: user.role, isDemo: !!user.isDemo };
     next();
   } catch (error) {
     next(error);
@@ -90,4 +124,6 @@ module.exports = {
   adminOnly,
   selfOrAdmin,
   requireAdmin2FA,
+  blockDemo,
+  isExpiredDemo,
 };

@@ -16,6 +16,8 @@ services:
         value: production
       - key: NODE_VERSION
         value: "22"
+      - key: DEMO_ENABLED
+        value: "true"
       - key: CLIENT_URL
         sync: false
       - key: CORS_ORIGINS

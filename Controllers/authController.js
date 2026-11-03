@@ -8,6 +8,8 @@ const asyncHandler = require("express-async-handler");
 const { OAuth2Client } = require("google-auth-library");
 const crypto = require("crypto");
 const twoFactor = require("../services/twoFactor");
+const demoService = require("../services/demoService");
+const { isExpiredDemo } = require("../middleware/authMiddleware");
 const {
   issueTokens,
   clearAuthCookies,
@@ -176,6 +178,20 @@ const login = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Start a fresh demo sandbox account and sign in as it
+ * @route   POST /api/auth/demo
+ */
+const demoLogin = asyncHandler(async (req, res) => {
+  if (!demoService.isEnabled()) {
+    res.status(404).json({ message: "Demo accounts are turned off" });
+    return;
+  }
+  const user = await demoService.createDemoUser();
+  const accessToken = issueTokens(res, user);
+  res.status(201).json({ success: true, user: sessionUser(user), accessToken });
+});
+
+/**
  * @desc    Exchange the refresh cookie for a new access token (rotates the cookie)
  * @route   POST /api/auth/refresh
  */
@@ -192,6 +208,7 @@ const refresh = asyncHandler(async (req, res) => {
     !user ||
     user.isDeleted ||
     user.isFrozen ||
+    isExpiredDemo(user) ||
     (user.tokenVersion || 0) !== decoded.tv
   ) {
     clearAuthCookies(res);
@@ -511,6 +528,7 @@ module.exports = {
   register,
   verifyEmailOTP,
   login,
+  demoLogin,
   googleLogin,
   refresh,
   setup2FA,

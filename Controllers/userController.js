@@ -532,6 +532,7 @@ const getLeaderboard = async (req, res) => {
     const activeUserIds = await Transaction.distinct("user_id");
     const users = await User.find({
       isDeleted: { $ne: true },
+      isDemo: { $ne: true },
       id: { $in: activeUserIds },
       $or: [
         { lastResetAt: { $exists: false } },

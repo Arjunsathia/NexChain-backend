@@ -36,6 +36,7 @@ npm run dev              # http://localhost:4001
 | `GEMINI_API_KEY` | no | AI chat assistant |
 | `CRYPTO_COMPARE_API_KEY` | no | News feed rate limit |
 | `ENGINE_ENABLED` | no | `false` runs the API without the order engine |
+| `DEMO_ENABLED` | no | `false` turns off the one-click demo accounts |
 
 ## Scripts
 
@@ -55,6 +56,7 @@ npm run dev              # http://localhost:4001
 - **Money moves** happen inside MongoDB transactions (`utils/transactionHelpers.js`), with atomic balance updates. An order is claimed and filled in the same transaction, so it can never fill twice.
 - **Background jobs** (order matching every 5 s, symbol sync every 30 s, hourly portfolio snapshots) run in the web process. Run **exactly one instance** with the engine enabled.
 - **Sessions:** 15-minute access tokens plus a 30-day httpOnly refresh cookie that rotates on use. Logout, password changes, freezes and role changes revoke every session by bumping `tokenVersion`.
+- **Demo accounts:** `POST /api/auth/demo` (5 per IP per hour) creates a private sandbox user with the normal $10k and signs in as it (`services/demoService.js`). Demo users have no password, can trade, set alerts and use the watchlist, but `blockDemo` stops them changing email, username, phone or password, uploading files, enabling 2FA, submitting KYC and emailing support. They're hidden from the leaderboard, their sessions end after 24 h, and an hourly job deletes them with all their data. Set `DEMO_ENABLED=false` to turn the endpoint off.
 
 ## Deploying (Render)
 
