@@ -124,6 +124,13 @@ const schemas = {
     documentImage: Joi.string().max(500).allow("", null),
   }).unknown(true),
 
+  // Public endpoint: keep it small and well-formed
+  feedback: Joi.object({
+    type: Joi.string().valid("suggestion", "bug", "praise", "general").required(),
+    message: Joi.string().trim().min(1).max(2000).required(),
+    userEmail: Joi.string().trim().lowercase().email().max(254).allow("", null),
+  }),
+
   kycVerify: Joi.object({
     user_id: Joi.string().required(),
     status: Joi.string().valid("verified", "rejected").required(),

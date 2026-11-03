@@ -26,6 +26,8 @@ const otpLimiter = limiter(10, 5, "Too many requests. Please try again after 10 
 const passwordResetLimiter = limiter(15, 5, "Too many password reset requests, please try again later");
 const googleLimiter = limiter(15, 30, "Too many sign-in attempts, please try again later");
 const refreshLimiter = limiter(15, 120, "Too many requests, please try again later");
+// Public, unauthenticated: stops one client flooding the admin inbox
+const feedbackLimiter = limiter(15, 10, "Too many feedback messages, please try again later");
 // Each call creates an account, so keep it tight per IP
 const demoLimiter = limiter(60, 5, "Too many demo accounts from this network. Please try again in an hour.");
 
@@ -41,5 +43,6 @@ module.exports = {
   googleLimiter,
   refreshLimiter,
   demoLimiter,
+  feedbackLimiter,
   chatLimiter,
 };

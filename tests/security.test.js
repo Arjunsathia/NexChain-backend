@@ -218,6 +218,16 @@ describe("S6/S7/S11 admin-only endpoints", () => {
     expect((await request(app).get("/api/feedback").set(bearer(admin.token))).status).toBe(200);
   });
 
+  it("public feedback is validated: known types, bounded length, real email", async () => {
+    const send = (body) => request(app).post("/api/feedback").send(body);
+    expect((await send({ type: "bug", message: "Chart doesn't load" })).status).toBe(201);
+    expect((await send({ type: "bug", message: "Hi", userEmail: "a@test.com" })).status).toBe(201);
+    expect((await send({ type: "spam", message: "Hello" })).status).toBe(400);
+    expect((await send({ type: "bug", message: "x".repeat(2001) })).status).toBe(400);
+    expect((await send({ type: "bug", message: "Hello", userEmail: "not-an-email" })).status).toBe(400);
+    expect((await send({ type: "bug", message: "   " })).status).toBe(400);
+  });
+
   it("users can't approve KYC", async () => {
     await User.updateOne({ id: alice.user.id }, { kycStatus: "pending" });
     const res = await request(app)

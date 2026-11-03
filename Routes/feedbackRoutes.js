@@ -8,11 +8,14 @@ const {
   deleteFeedback,
 } = require("../Controllers/feedbackController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
+const { feedbackLimiter } = require("../middleware/rateLimiters");
+const validate = require("../middleware/validation");
+const schemas = require("../utils/validationSchemas");
 
 const router = express.Router();
 
-// Public route - anyone can submit feedback
-router.post("/", submitFeedback);
+// Public route - anyone can submit feedback (rate limited and validated)
+router.post("/", feedbackLimiter, validate(schemas.feedback), submitFeedback);
 
 // Admin routes
 router.get("/", protect, adminOnly, getFeedback);
