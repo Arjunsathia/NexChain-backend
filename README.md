@@ -5,18 +5,20 @@ Express 5 + MongoDB backend for NexChain, a crypto paper-trading platform. Users
 ## Requirements
 
 - Node.js 20 or newer
-- MongoDB **running as a replica set**. Trades use multi-document transactions, which a standalone `mongod` doesn't support. MongoDB Atlas (free tier is fine) is a replica set by default. Locally, either:
-  - `mongod --replSet rs0`, then run `rs.initiate()` once in `mongosh`, or
-  - use Atlas for development too.
+- For development, nothing else: `npm run dev` starts its own private MongoDB.
+- In production, MongoDB **running as a replica set** (trades use multi-document transactions, which a standalone `mongod` doesn't support). MongoDB Atlas is a replica set by default.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env     # then fill it in (see below)
-npm run seed             # optional: local superadmin, admin and test user (password: Password123)
+cp .env.example .env     # then fill in the secrets (see below)
 npm run dev              # http://localhost:4001
 ```
+
+`npm run dev` starts a private MongoDB replica set on port 27027 (data kept in `.local-db/`), seeds the dev accounts (`superadmin`, `admin`, `testuser`, password `Password123`) and runs the API with auto-reload. Cloudinary and email keys are blanked so nothing reaches real accounts. Ctrl+C stops everything. If a previous run was killed without Ctrl+C, the next `npm run dev` cleans up its leftover processes. If the port is held by something else, it tells you which process and how to stop it.
+
+To develop against your own database instead (Atlas, or your own `mongod --replSet rs0`), set `MONGO_URI` in `.env` and run `npm run dev:own-db`.
 
 ### Environment variables
 
@@ -42,7 +44,9 @@ npm run dev              # http://localhost:4001
 
 | Command | What it does |
 |---|---|
-| `npm run dev` / `npm start` | Start with / without auto-reload |
+| `npm run dev` | Local development: private database, seeded accounts, auto-reload (`dev:local` is the same) |
+| `npm run dev:own-db` | Auto-reload against the `MONGO_URI` in `.env` |
+| `npm start` | Production start (what Render runs) |
 | `npm test` | Jest + Supertest against an in-memory MongoDB replica set |
 | `npm run lint` | ESLint |
 | `npm run seed` | Create local dev accounts (refuses `NODE_ENV=production`) |

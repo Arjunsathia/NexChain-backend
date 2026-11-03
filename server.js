@@ -193,16 +193,28 @@ if (require.main === module) {
   // Only one running instance may have the engine on, or orders are processed twice.
   const engineEnabled = process.env.ENGINE_ENABLED !== "false";
 
+  // Listen only once the database is up, so "Running" means the API works
+  // (connectDB exits the process with a clear message if it can't connect)
+  const server = require("http").createServer(app);
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`[SERVER  ] ❌ Port ${PORT} is already in use by another process.`);
+      console.error("[SERVER  ]    Another copy of the API is probably still running: stop it with Ctrl+C in its terminal,");
+      console.error(`[SERVER  ]    find it with \`netstat -ano | findstr :${PORT}\` (Windows), or set PORT in .env.`);
+      process.exit(1);
+    }
+    throw err;
+  });
+
   connectDB().then(() => {
+    server.listen(PORT, () => {
+      console.log(`[SERVER  ] ✅ Running on port ${PORT}`);
+      console.log(`[SERVER  ]  Environment: ${process.env.NODE_ENV || "development"}`);
+    });
+    socketService.init(server);
     if (engineEnabled) tradingEngine.start();
     else console.log("[TRADING ] ⏸  Engine disabled (ENGINE_ENABLED=false)");
   });
-
-  const server = app.listen(PORT, () => {
-    console.log(`[SERVER  ] ✅ Running on port ${PORT}`);
-    console.log(`[SERVER  ]  Environment: ${process.env.NODE_ENV || "development"}`);
-  });
-  socketService.init(server);
 
   // Render sends SIGTERM on every deploy: stop taking work, let in-flight
   // requests and trades finish, then exit
