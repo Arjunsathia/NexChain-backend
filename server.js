@@ -48,8 +48,16 @@ const allowedOrigins = [
   .map((origin) => origin && origin.trim())
   .filter(Boolean);
 
+// In development, also accept the Vite dev server on any home-network address
+// (phones testing over Wi-Fi), so a new router-assigned IP doesn't break login.
+// Production only ever accepts CLIENT_URL / CORS_ORIGINS.
+const LOCAL_DEV_ORIGIN =
+  /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):5173$/;
+const isDevOrigin = (origin) => process.env.NODE_ENV !== "production" && LOCAL_DEV_ORIGIN.test(origin);
+
 const corsOptions = {
-  origin: allowedOrigins,
+  origin: (origin, callback) =>
+    callback(null, !origin || allowedOrigins.includes(origin) || isDevOrigin(origin)),
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Admin-2FA-Code"],
   credentials: true,

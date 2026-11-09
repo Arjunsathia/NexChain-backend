@@ -296,3 +296,31 @@ describe("health check", () => {
     expect(res.body).toMatchObject({ status: "ok", db: { ok: true } });
   });
 });
+
+describe("CORS", () => {
+  const allowOrigin = async (origin) =>
+    (await request(app).options("/api/auth/demo").set("Origin", origin).set("Access-Control-Request-Method", "POST"))
+      .headers["access-control-allow-origin"];
+
+  it("in development, accepts the dev server on home-network addresses (phones over Wi-Fi)", async () => {
+    expect(await allowOrigin("http://localhost:5173")).toBe("http://localhost:5173");
+    expect(await allowOrigin("http://192.168.1.8:5173")).toBe("http://192.168.1.8:5173");
+    expect(await allowOrigin("http://10.0.0.20:5173")).toBe("http://10.0.0.20:5173");
+  });
+
+  it("never accepts other sites, or the wrong port", async () => {
+    expect(await allowOrigin("https://evil.example")).toBeUndefined();
+    expect(await allowOrigin("http://192.168.1.8:3000")).toBeUndefined();
+    expect(await allowOrigin("http://192.168.1.8.evil.example:5173")).toBeUndefined();
+  });
+
+  it("in production, accepts only the configured frontend", async () => {
+    const saved = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      expect(await allowOrigin("http://192.168.1.8:5173")).toBeUndefined();
+    } finally {
+      process.env.NODE_ENV = saved;
+    }
+  });
+});
