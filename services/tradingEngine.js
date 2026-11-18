@@ -15,6 +15,14 @@ const { CORE_SYMBOLS } = require("../config/coins");
 // user-driven lookups can't knock out the whole price feed.
 const MAX_TRACKED_SYMBOLS = 300;
 
+// Price stream hosts, tried in order. binance.com refuses connections from the
+// US (where Render runs); data-stream.binance.vision is Binance's market-data
+// mirror, reachable there, with the same stream format. BINANCE_WS_URL, if set,
+// is tried first.
+const DEFAULT_WS_HOSTS = ["wss://data-stream.binance.vision", "wss://stream.binance.com:9443"];
+const priceStreamHosts = (preferred = process.env.BINANCE_WS_URL) =>
+  [...new Set([preferred, ...DEFAULT_WS_HOSTS].filter(Boolean).map((h) => h.replace(/\/+$/, "")))];
+
 const PRICE_FRESHNESS_MS = 20000;
 const MAX_ORDERS_PER_TICK = 500;
 const EXPECTED_ERRORS = [
@@ -280,10 +288,15 @@ class TradingEngine {
     if (this.activeSymbols.size === 0) return;
 
     const streams = [...this.activeSymbols].map(s => `${s}@ticker`).join("/");
-    const wsBase = process.env.BINANCE_WS_URL || "wss://stream.binance.com:9443";
+    const hosts = priceStreamHosts();
+    this.wsHostIndex = (this.wsHostIndex || 0) % hosts.length;
+    const wsBase = hosts[this.wsHostIndex];
     const url = `${wsBase}/stream?streams=${streams}`;
 
     this.ws = new WebSocket(url);
+    // A host that closes before sending any price (blocked, refused) is skipped
+    // on the next attempt; one that delivered data is kept.
+    let receivedData = false;
 
     this.ws.on("open", () => {
       this.reconnectAttempts = 0;
@@ -292,6 +305,10 @@ class TradingEngine {
       const alertService = require("./alertService"); // Lazy load or move to top
 
     this.ws.on("message", (data) => {
+      if (!receivedData) {
+        receivedData = true;
+        console.log(`📡 [TRADING ]  Price feed connected via ${wsBase}`);
+      }
       try {
         const msg = JSON.parse(data.toString());
         if (msg.stream && msg.data) {
@@ -315,7 +332,12 @@ class TradingEngine {
 
     this.ws.on("close", () => {
       // Avoid log spam if we closed it ourselves via sync
-      if (this.ws === null) return; 
+      if (this.ws === null) return;
+
+      if (!receivedData && hosts.length > 1) {
+        this.wsHostIndex = (this.wsHostIndex + 1) % hosts.length;
+        console.log(`[TRADING ] ↪️  No prices from ${wsBase}; trying ${hosts[this.wsHostIndex]} next`);
+      }
 
       // Never give up: without the feed, prices go stale and orders stop filling.
       // Exponential backoff capped at 30s, with jitter to avoid reconnect bursts.
@@ -387,3 +409,4 @@ class TradingEngine {
 
 const engine = new TradingEngine();
 module.exports = engine;
+module.exports.priceStreamHosts = priceStreamHosts;
