@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="280" viewBox="0 0 1200 280" role="img" aria-labelledby="t d">
+  <title id="t">NexChain API</title>
+  <desc id="d">Backend for NexChain, a crypto paper-trading platform</desc>
+  <style>
+    .bg { fill: #f6f8fa; } .edge { stroke: #d0d7de; } .grid { stroke: #e6e9ed; }
+    .ink { fill: #1f2328; } .muted { fill: #59636e; } .faint { fill: #afb8c1; } .faint-s { stroke: #afb8c1; }
+    .chip { fill: #ffffff; stroke: #d0d7de; } .mark { stroke: #1f2328; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #161b22; } .edge { stroke: #30363d; } .grid { stroke: #1f252d; }
+      .ink { fill: #e6edf3; } .muted { fill: #9198a1; } .faint { fill: #3d444d; } .faint-s { stroke: #3d444d; }
+      .chip { fill: #0d1117; stroke: #30363d; } .mark { stroke: #e6edf3; }
+    }
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }
+  </style>
+
+  <rect class="bg edge" x="1" y="1" width="1198" height="278" rx="16" stroke-width="2"/>
+
+  <g transform="translate(820 0) scale(0.75 1) translate(-700 0)">
+  <!-- faint grid -->
+  <g class="grid" stroke-width="1">
+    <path d="M700 60H1160M700 110H1160M700 160H1160M700 210H1160"/>
+  </g>
+
+  <!-- candlesticks -->
+  <g stroke-width="2" class="faint-s">
+    <path d="M740 120V200M790 100V185M840 130V215M890 90V170M940 70V150M990 95V160M1040 55V135M1090 40V115M1130 50V100"/>
+  </g>
+  <g class="faint">
+    <rect x="732" y="140" width="16" height="45" rx="2"/>
+    <rect x="782" y="120" width="16" height="45" rx="2"/>
+    <rect x="832" y="150" width="16" height="45" rx="2"/>
+    <rect x="882" y="110" width="16" height="40" rx="2"/>
+    <rect x="932" y="88" width="16" height="45" rx="2"/>
+    <rect x="982" y="110" width="16" height="35" rx="2"/>
+    <rect x="1032" y="72" width="16" height="45" rx="2"/>
+    <rect x="1082" y="58" width="16" height="40" rx="2"/>
+    <rect x="1122" y="62" width="16" height="25" rx="2"/>
+  </g>
+
+  </g>
+
+  <!-- mark: two linked hexagons -->
+  <g class="mark" fill="none" stroke-width="5" stroke-linejoin="round">
+    <path d="M96 92l26-15 26 15v30l-26 15-26-15z"/>
+    <path d="M126 118l26-15 26 15v30l-26 15-26-15z"/>
+  </g>
+
+  <text class="ink" x="210" y="128" font-size="50" font-weight="700">NexChain API</text>
+  <text class="muted" x="212" y="168" font-size="21">Paper-trading backend · live Binance prices · real order types</text>
+
+  <!-- chips -->
+  <g font-size="15" font-weight="600">
+    <rect class="chip" x="96" y="200" width="104" height="34" rx="17" stroke-width="1.5"/>
+    <text class="muted" x="148" y="222" text-anchor="middle">Express 5</text>
+    <rect class="chip" x="212" y="200" width="176" height="34" rx="17" stroke-width="1.5"/>
+    <text class="muted" x="300" y="222" text-anchor="middle">MongoDB replica set</text>
+    <rect class="chip" x="400" y="200" width="118" height="34" rx="17" stroke-width="1.5"/>
+    <text class="muted" x="459" y="222" text-anchor="middle">WebSocket</text>
+    <rect class="chip" x="530" y="200" width="120" height="34" rx="17" stroke-width="1.5"/>
+    <text class="muted" x="590" y="222" text-anchor="middle">Node 20+</text>
+  </g>
+</svg>
