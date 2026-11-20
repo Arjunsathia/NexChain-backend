@@ -14,7 +14,7 @@ Trade with virtual money against live Binance prices: no real funds, real market
 
 [Quick start](#-quick-start) · [Architecture](#-architecture) · [API map](#-api-map) · [Configuration](#-configuration) · [Deploying](#-deploying-render) · [Troubleshooting](#-troubleshooting)
 
-Frontend: [NexChain-FE](../NexChain-FE)
+Frontend: [NexChain-FE](https://github.com/Arjunsathia/NexChain-FE)
 
 </div>
 
