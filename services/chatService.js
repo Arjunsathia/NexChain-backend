@@ -57,7 +57,8 @@ CONTEXT:
 
 // Tried in order. A model that is overloaded or retired is skipped for a minute,
 // so the next questions go straight to one that works. Override with GEMINI_MODELS.
-const DEFAULT_MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-flash-lite-latest"];
+// The lite model answers in about a second; the larger ones often time out or report busy, so they're backups
+const DEFAULT_MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.5-flash"];
 const MODEL_TIMEOUT_MS = 12_000;
 const COOLDOWN_MS = 60_000;
 const MAX_TOOL_ROUNDS = 2;
