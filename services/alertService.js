@@ -4,11 +4,15 @@ const User = require("../Models/userModel");
 const emailService = require("../utils/emailService");
 const socketService = require("./socketService");
 const escapeHtml = require("../utils/escapeHtml");
+const db = require("../config/db");
+const createThrottledLogger = require("../utils/throttledLog");
+
+const logCheckError = createThrottledLogger("[Alert Service]");
 
 class AlertService {
   constructor() {
-    this.processing = false;
-    this.lastChecked = {}; 
+    this.lastChecked = {};
+    this.inFlight = new Set(); // symbols with a check still running
   }
 
   /**
@@ -18,7 +22,11 @@ class AlertService {
    */
   async processPriceUpdate(symbol, price) {
     if (!symbol || !price) return;
-    
+    // Database down: skip quietly (db.js logs the outage once) instead of failing every tick
+    if (!db.isDbReady()) return;
+    // A slow query must not stack up more checks for the same symbol
+    if (this.inFlight.has(symbol)) return;
+
     // Optimization: Don't query DB if we checked this symbol very recently (e.g. < 2 sec)
     // unless you want tick-perfect precision. For a simulation, throttling is safer.
     const now = Date.now();
@@ -26,6 +34,7 @@ class AlertService {
         return;
     }
     this.lastChecked[symbol] = now;
+    this.inFlight.add(symbol);
 
     try {
       // Find active alerts for this symbol
@@ -64,17 +73,23 @@ class AlertService {
       }
 
     } catch (error) {
-      console.error(`[Alert Service] Error checking ${symbol}:`, error.message);
+      logCheckError(`Error checking ${symbol}: ${error.message}`);
+    } finally {
+      this.inFlight.delete(symbol);
     }
   }
 
   async handleTriggeredAlerts(alerts, currentPrice) {
     for (const alert of alerts) {
       try {
-        // 1. Update Alert Status
-        alert.status = "triggered";
-        alert.triggered_at = new Date();
-        await alert.save();
+        // 1. Claim the alert atomically: only one check can flip it from active,
+        // so it never notifies or emails twice
+        const claimed = await Alert.findOneAndUpdate(
+          { _id: alert._id, status: "active" },
+          { $set: { status: "triggered", triggered_at: new Date() } },
+          { new: true },
+        );
+        if (!claimed) continue;
 
         // 2. Fetch User for Email/Notifications
         const user = await User.findOne({ id: alert.user_id });
@@ -137,7 +152,7 @@ class AlertService {
             
             // Fire and forget email to not block the thread
             emailService.sendEmail(user.email, `Price Alert: ${alert.coin_symbol.toUpperCase()}`, emailHtml).catch(err => {
-                console.error(`[Alert Service] Failed to send email to ${user.email}:`, err.message);
+                console.error(`[Alert Service] Failed to send alert email to user ${user.id}:`, err.message);
             });
         }
 

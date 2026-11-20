@@ -15,7 +15,9 @@ const { MongoMemoryReplSet } = require("mongodb-memory-server");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const ROOT = path.join(__dirname, "..");
-const DB_PATH = path.join(ROOT, ".local-db");
+// LOCAL_DB_PATH moves the data folder, e.g. out of OneDrive, whose syncing can
+// lock MongoDB's files and crash it
+const DB_PATH = process.env.LOCAL_DB_PATH ? path.resolve(process.env.LOCAL_DB_PATH) : path.join(ROOT, ".local-db");
 const DB_PORT = 27027; // fixed so the stored replica set config stays valid across restarts
 const API_PORT = Number(process.env.PORT) || 4001;
 const PID_FILE = path.join(DB_PATH, ".pids.json");
@@ -147,6 +149,12 @@ const requireFreePort = async (port, what) => {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const start = async () => {
+  if (/[\\/]onedrive[^\\/]*[\\/]/i.test(DB_PATH)) {
+    log("⚠️  The local database folder is inside OneDrive. OneDrive syncing can lock its files and crash it.");
+    log(`   If the database keeps stopping, set LOCAL_DB_PATH in .env to a folder outside OneDrive${
+      IS_WINDOWS ? " (e.g. C:\\nexchain-db)" : ""
+    }.`);
+  }
   fs.mkdirSync(DB_PATH, { recursive: true });
   checkPreviousRun();
   await sleep(1000); // let the OS release the ports
@@ -172,7 +180,7 @@ const start = async () => {
     ...(process.env.LOCAL_AI === "off" ? { GEMINI_API_KEY: "" } : {}),
   };
 
-  log(`Database: ${env.MONGO_URI} (data in .local-db/)`);
+  log(`Database: ${env.MONGO_URI} (data in ${DB_PATH})`);
   log(`AI assistant: ${process.env.LOCAL_AI === "off" ? "off (LOCAL_AI=off)" : "on, using GEMINI_API_KEY from .env"}`);
   execFileSync(process.execPath, [path.join(__dirname, "seed.js")], { cwd: ROOT, env, stdio: "inherit" });
 
@@ -184,7 +192,8 @@ const start = async () => {
     stdio: "inherit",
     detached: !IS_WINDOWS, // own process group, so killTree can signal it on macOS/Linux
   });
-  const mongodPid = replSet.servers[0].instanceInfo?.instance?.mongodProcess?.pid;
+  const mongodProcess = replSet.servers[0].instanceInfo?.instance?.mongodProcess;
+  const mongodPid = mongodProcess?.pid;
   fs.writeFileSync(
     PID_FILE,
     JSON.stringify({ launcher: process.pid, children: [api.pid, mongodPid].filter(Boolean) }),
@@ -192,15 +201,26 @@ const start = async () => {
   log(`API with auto-reload on http://localhost:${API_PORT} (Ctrl+C stops everything)`);
 
   let stopping = false;
-  const stop = async () => {
+  const stop = async (exitCode = 0) => {
     if (stopping) return;
     stopping = true;
     killTree(api.pid); // nodemon and the API it started
-    await replSet.stop({ doCleanup: false }); // keep .local-db/ for next time
+    // keep .local-db/ for next time; mongod may already be gone
+    await replSet.stop({ doCleanup: false }).catch(() => {});
     fs.rmSync(PID_FILE, { force: true });
-    process.exit(0);
+    process.exit(typeof exitCode === "number" ? exitCode : 0);
   };
   api.on("exit", stop);
+  // Without its database the API only fails (ECONNREFUSED on every price tick),
+  // so if mongod dies, say so and stop everything instead of leaving a zombie API
+  mongodProcess?.once("exit", (code, signal) => {
+    if (stopping) return;
+    console.error(
+      `[LOCAL   ] ❌ The local database stopped unexpectedly (${signal ? `signal ${signal}` : `exit code ${code}`}). Stopping the API.`,
+    );
+    console.error("[LOCAL   ]    Run `npm run dev` again to restart both.");
+    stop(1);
+  });
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
 };

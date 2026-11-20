@@ -201,6 +201,11 @@ if (require.main === module) {
   // Only one running instance may have the engine on, or orders are processed twice.
   const engineEnabled = process.env.ENGINE_ENABLED !== "false";
 
+  // Safety net: a promise nobody awaited must show up in the logs, not vanish
+  process.on("unhandledRejection", (reason) => {
+    console.error("[SERVER  ] ❌ Unhandled rejection:", reason instanceof Error ? reason.stack : reason);
+  });
+
   // Listen only once the database is up, so "Running" means the API works
   // (connectDB exits the process with a clear message if it can't connect)
   const server = require("http").createServer(app);

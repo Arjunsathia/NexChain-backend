@@ -4,6 +4,20 @@ const Order = require("../Models/Order");
 const Alert = require("../Models/Alert");
 const { processOrderExecution } = require("./orderExecutionService");
 const cron = require("node-cron");
+const db = require("../config/db");
+const createThrottledLogger = require("../utils/throttledLog");
+
+const logEngineError = createThrottledLogger("❌ [TRADING ] ");
+
+/** Runs a scheduled DB job only while the database is up; failures are rate-limited in the log */
+const dbJob = (name, fn) => async () => {
+  if (!db.isDbReady()) return;
+  try {
+    await fn();
+  } catch (err) {
+    logEngineError(`${name} Error: ${err.message}`);
+  }
+};
 
 // WebSocket ready states
 const WS_OPEN = 1;
@@ -49,41 +63,20 @@ class TradingEngine {
 
     // 2. Schedule regular DB syncs
     this.tasks = [];
-    this.tasks.push(cron.schedule("*/30 * * * * *", async () => {
-      try {
-        await this.syncWithDatabase();
-      } catch (err) {
-        console.error("❌ [TRADING ]  Cron Sync Error:", err.message);
-      }
-    }));
+    // Every job below is skipped while the database is down (db.js logs the outage once)
+    this.tasks.push(cron.schedule("*/30 * * * * *", dbJob("Cron Sync", () => this.syncWithDatabase())));
 
     // 3. Schedule order execution check
-    this.tasks.push(cron.schedule("*/5 * * * * *", async () => {
-      try {
-        await this.checkAndExecuteOrders();
-      } catch (err) {
-        console.error("❌ [TRADING ]  Execution Error:", err.message);
-      }
-    }));
+    this.tasks.push(cron.schedule("*/5 * * * * *", dbJob("Execution", () => this.checkAndExecuteOrders())));
 
     // 4. Hourly portfolio snapshots for the performance chart
-    this.tasks.push(cron.schedule("2 * * * *", async () => {
-      try {
-        await require("./equityService").snapshotAll();
-      } catch (err) {
-        console.error("❌ [TRADING ]  Snapshot Error:", err.message);
-      }
-    }));
+    this.tasks.push(cron.schedule("2 * * * *", dbJob("Snapshot", () => require("./equityService").snapshotAll())));
 
     // 5. Hourly purge of expired demo accounts and their data
-    this.tasks.push(cron.schedule("17 * * * *", async () => {
-      try {
-        const removed = await require("./demoService").purgeExpiredDemos();
-        if (removed) console.log(`🧹 [TRADING ]  Purged ${removed} expired demo account(s)`);
-      } catch (err) {
-        console.error("❌ [TRADING ]  Demo purge Error:", err.message);
-      }
-    }));
+    this.tasks.push(cron.schedule("17 * * * *", dbJob("Demo purge", async () => {
+      const removed = await require("./demoService").purgeExpiredDemos();
+      if (removed) console.log(`🧹 [TRADING ]  Purged ${removed} expired demo account(s)`);
+    })));
 
     console.log("✅ [TRADING ]  Engine active and running.");
   }
@@ -101,18 +94,21 @@ class TradingEngine {
   }
 
   async syncWithDatabase() {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
     try {
-      const orders = await Order.find({ status: { $in: ["pending", "triggered"] } });
-      const orderSymbols = orders
-        .filter(o => o.coin_symbol)
-        .map(o => o.coin_symbol.toLowerCase().endsWith("usdt") ? o.coin_symbol.toLowerCase() : o.coin_symbol.toLowerCase() + "usdt");
-      
-      const alerts = await Alert.find({ status: "active" });
-      const alertSymbols = alerts
-        .filter(a => a.coin_symbol)
-        .map(a => a.coin_symbol.toLowerCase().endsWith("usdt") ? a.coin_symbol.toLowerCase() : a.coin_symbol.toLowerCase() + "usdt");
+      // Only the symbol list is needed, not every order and alert document
+      const [orderCoins, alertCoins] = await Promise.all([
+        Order.distinct("coin_symbol", { status: { $in: ["pending", "triggered"] } }),
+        Alert.distinct("coin_symbol", { status: "active" }),
+      ]);
+      const toPair = (sym) => {
+        const s = sym.toLowerCase();
+        return s.endsWith("usdt") ? s : s + "usdt";
+      };
+      const dbSymbols = [...orderCoins, ...alertCoins].filter(Boolean).map(toPair);
 
-      const currentSymbols = new Set([...CORE_SYMBOLS, ...orderSymbols, ...alertSymbols]);
+      const currentSymbols = new Set([...CORE_SYMBOLS, ...dbSymbols]);
 
       // Check if any NEW symbols need to be tracked
       const newSymbols = [...currentSymbols].filter(s => !this.activeSymbols.has(s));
@@ -139,7 +135,9 @@ class TradingEngine {
         }
       }
     } catch (error) {
-      console.error("[TRADING ] ❌ Sync Error:", error.message);
+      logEngineError(`Sync Error: ${error.message}`);
+    } finally {
+      this.isSyncing = false;
     }
   }
 
@@ -211,11 +209,15 @@ class TradingEngine {
     this.ensureTracking(s);
 
     const start = Date.now();
+    let announced = false;
     while (Date.now() - start < maxWaitMs) {
       const price = await this.getPrice(s);
       if (price) return price;
-      
-      console.log(`[TRADING ] ⏳ Waiting for ${s} price (${Math.round((Date.now() - start)/1000)}s)...`);
+
+      if (!announced) {
+        console.log(`[TRADING ] ⏳ Waiting for ${s} price...`);
+        announced = true;
+      }
       await new Promise(r => setTimeout(r, 200));
     }
     
@@ -377,7 +379,7 @@ class TradingEngine {
       }
 
     } catch (error) {
-      console.error("[TRADING ] ❌ Loop Error:", error.message);
+      logEngineError(`Loop Error: ${error.message}`);
     } finally {
       this.isProcessing = false;
     }
