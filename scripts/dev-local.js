@@ -163,7 +163,17 @@ const start = async () => {
 
   const replSet = await MongoMemoryReplSet.create({
     replSet: { count: 1, storageEngine: "wiredTiger" },
-    instanceOpts: [{ port: DB_PORT, dbPath: DB_PATH, storageEngine: "wiredTiger" }],
+    instanceOpts: [
+      {
+        port: DB_PORT,
+        dbPath: DB_PATH,
+        storageEngine: "wiredTiger",
+        // By default mongod's cache claims half the machine's RAM. On a busy
+        // laptop that allocation fails and mongod aborts ("out of memory",
+        // exit code 14). Dev data is tiny, so a small cache is plenty.
+        args: ["--wiredTigerCacheSizeGB", process.env.LOCAL_DB_CACHE_GB || "0.25"],
+      },
+    ],
   });
 
   // dotenv never overrides variables that are already set, so these win over .env
